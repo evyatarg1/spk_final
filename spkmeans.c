@@ -28,7 +28,8 @@ void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int n, int dim);
 double calc_weight(Point *first, Point *sec, int dim);
 void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix, int n);
 double calc_row_sum(Matrix * adj_matrix, int row, int n);
-void mult_diag_matrix(Matrix * first, Matrix * sec, Matrix * res, int n);
+void mult_diag_matrix_first_diag(Matrix * first, Matrix * sec, Matrix * res, int n);
+void mult_diag_matrix_sec_diag(Matrix * first_diag, Matrix * sec, Matrix * res, int n);
 void print_mat(Matrix *mat, int n);
 void to_l_norm(Matrix *mat, int n);
 
@@ -196,7 +197,7 @@ double calc_row_sum(Matrix * adj_matrix, int row, int n)
 }
 
 
-void mult_diag_matrix(Matrix * first_diag, Matrix * sec, Matrix * res, int n)
+void mult_diag_matrix_first_diag(Matrix * first_diag, Matrix * sec, Matrix * res, int n)
 {
     int i, j;
     
@@ -206,7 +207,23 @@ void mult_diag_matrix(Matrix * first_diag, Matrix * sec, Matrix * res, int n)
     {
         for (j = 0; j < n; j++)
         {
-            res->vertexs[i][i] += (first_diag->vertexs[i][i])*(sec->vertexs[i][j]); 
+            res->vertexs[i][j] += (first_diag->vertexs[i][i])*(sec->vertexs[i][j]); 
+        }
+    }
+    return;
+}
+
+void mult_diag_matrix_sec_diag(Matrix * first_diag, Matrix * sec, Matrix * res, int n)
+{
+    int i, j;
+    
+    /*The sec mat must be diagonal! */
+    
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            res->vertexs[i][j] += (first_diag->vertexs[i][j])*(sec->vertexs[j][j]); 
         }
     }
     return;
@@ -214,17 +231,24 @@ void mult_diag_matrix(Matrix * first_diag, Matrix * sec, Matrix * res, int n)
 
 void to_l_norm(Matrix *mat, int n)
 {
-    int i;
+    int i,j;
     for (i = 0; i < n; i++)
     {
-        mat->vertexs[i][i] = 1-mat->vertexs[i][i];
+        for (j = 0; j < n; j++)
+        {
+            if(i==j)
+            {
+                mat->vertexs[i][j] = 1-mat->vertexs[i][j];
+
+            }
+            else
+            {
+                mat->vertexs[i][j] = (-1)*(mat->vertexs[i][j]);
+            }
+        }
     }
-    return;
-    
+    return;  
 }
-
-
-
 
 void print_mat(Matrix *mat, int n)
 {
@@ -242,7 +266,7 @@ void print_mat(Matrix *mat, int n)
         }
          printf("\n \n");
     }
-    printf("there are %d cells that are not 0", count);
+    printf("there are %d cells that are not 0\n", count);
     
 }
 
@@ -330,16 +354,19 @@ int main(int argc, char** argv)
     /*---- Weighted Adjacency Matrix----*/
     adj_matrix = (Matrix*) calloc(n, sizeof(double*));
     assert(adj_matrix != NULL);
+    adj_matrix->size = n;
     to_weighted_adj_mat(point_arr, adj_matrix, n, dim);
 
     /*---- Diagonal Degree Matrix ----*/
     diag_degree_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(diag_degree_mat != NULL);
+    diag_degree_mat->size = n;
     calc_diagonal_degree_mat(diag_degree_mat, adj_matrix, n);    
 
     /*---- L Norm Matrix ----*/
     l_norm_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(l_norm_mat != NULL);
+    l_norm_mat->size = n;
     l_norm_mat->vertexs = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
@@ -347,10 +374,9 @@ int main(int argc, char** argv)
         assert(l_norm_mat->vertexs[i] != NULL);
     }
 
-
-
     temp_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(temp_mat != NULL);
+    temp_mat->size = n;
     temp_mat->vertexs = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
@@ -358,7 +384,9 @@ int main(int argc, char** argv)
         assert(temp_mat->vertexs[i] != NULL);
     }
 
-   
+    printf("The weight adj mat is:\n");
+    print_mat(adj_matrix, n);
+    
     printf("A = Diag:\n");
     print_mat(diag_degree_mat, n);
 
@@ -366,13 +394,16 @@ int main(int argc, char** argv)
     print_mat(adj_matrix, n);
 
     /*   D^(-0.5) x (W)  */
-    mult_diag_matrix(diag_degree_mat, adj_matrix, temp_mat, n); 
+    mult_diag_matrix_first_diag(diag_degree_mat, adj_matrix, temp_mat, n); 
 
     printf("A*B \n");
     print_mat(temp_mat, n);
 
     /*  (D^(-0.5) * W)  x  (D^(-0.5)) */
-    mult_diag_matrix(temp_mat, diag_degree_mat, l_norm_mat, n);
+    mult_diag_matrix_sec_diag(temp_mat, diag_degree_mat, l_norm_mat, n);
+    printf("(A*B)*A:\n");
+    print_mat(l_norm_mat, n);
+
     to_l_norm(l_norm_mat, n);
     printf("I - (A*B)*A:\n");
 
