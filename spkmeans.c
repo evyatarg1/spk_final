@@ -297,7 +297,7 @@ int main(int argc, char** argv)
     {
         /*use the heuristic 1.3*/
     }
-
+    printf("bla\n");
     /*if(goal == "spk")
     {
         printf("In construction\n");
