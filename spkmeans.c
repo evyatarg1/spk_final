@@ -42,6 +42,7 @@ double find_distance(Point* point, Cluster* cluster, int dim);
 void print_c(Cluster *cluster, int dim);
 int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
 int check_difference_in_centroides(Cluster** clusters, int k, int dim);
+void print_matrix(Matrix *mat);
 
 
 int get_num_points(FILE *filename)
@@ -257,11 +258,13 @@ void to_l_norm(Matrix *mat)
 void print_mat(Matrix *mat)
 {
     int i, j, count;
+    double a;
     count = 0;
     for (i = 0; i < mat->rows; i++)
     {
-        for (j = 0; j < mat->rows; j++)
+        for (j = 0; j < mat->columns; j++)
         {
+            a = mat->vertexs[i][j];
             printf("%f, ", mat->vertexs[i][j]);
             if(mat->vertexs[i][j]>0.00001 || mat->vertexs[i][j]<-0.0001)
             {
@@ -273,6 +276,8 @@ void print_mat(Matrix *mat)
     printf("there are %d cells that are not 0\n", count);
     
 }
+
+/**step 5 functions**/
 
 Matrix* normalize_matrix(Matrix* mat){
     int i;
@@ -293,7 +298,7 @@ Matrix* normalize_matrix(Matrix* mat){
 }
 
 double* normalize_row(double* row, int elements_in_row){
-    double sum_of_squares, denominator, a;
+    double sum_of_squares, denominator;
     double* normalized_row;
     int i;
 
@@ -310,6 +315,8 @@ double* normalize_row(double* row, int elements_in_row){
     }
     return normalized_row;
 }
+
+/**step 6 functions**/
 
 void copy_centroid(double* from, double* to, int dim){
     int i;
@@ -544,8 +551,9 @@ int kmeans(Matrix* mat, int k){
 
     return 1;
 }
-int main(int argc, char** argv){
-    Matrix* mat;
+
+int tester_main(int argc, char** argv){
+    Matrix* mat, *normalized_matrix;
     int i;
 
     mat = (Matrix*) calloc(1, sizeof (Matrix));
@@ -575,10 +583,12 @@ int main(int argc, char** argv){
     mat->vertexs[5][2] =-5.9993;
 
     kmeans(mat, 3);
-
+    normalized_matrix = normalize_matrix(mat);
+    print_matrix(normalized_matrix);
+    return 1;
 }
 
-int maint(int argc, char** argv)
+int main(int argc, char** argv)
 {
     /*CMD: prog_name, k, goal, file.mane*/
     /*  ---- Declaration ----  */
