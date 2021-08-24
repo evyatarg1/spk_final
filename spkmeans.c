@@ -17,7 +17,7 @@ typedef struct Point{
 typedef struct Matrix{
     int rows;
     int columns;
-    double** vertexs;
+    double** vertices;
 } Matrix;
 
 
@@ -41,7 +41,7 @@ int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points,
 double find_distance(Point* point, Cluster* cluster, int dim);
 void print_c(Cluster *cluster, int dim);
 int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
-int check_difference_in_centroides(Cluster** clusters, int k, int dim);
+int check_difference_in_centroids(Cluster** clusters, int k, int dim);
 void print_matrix(Matrix *mat);
 
 
@@ -130,12 +130,12 @@ void input_to_points_struct(FILE *filename, Point** point_arr, int dim)
 void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
 {
     int i,j;
-    adj_matrix->vertexs = calloc(adj_matrix->rows, sizeof(double*));
+    adj_matrix->vertices = calloc(adj_matrix->rows, sizeof(double*));
     
     for(i=0; i<adj_matrix->rows;i++)
     {
-        adj_matrix->vertexs[i] = calloc(adj_matrix->rows, sizeof(double));
-        assert(adj_matrix->vertexs[i] != NULL);
+        adj_matrix->vertices[i] = calloc(adj_matrix->rows, sizeof(double));
+        assert(adj_matrix->vertices[i] != NULL);
     }
     
     for(i=0; i<adj_matrix->rows;i++)
@@ -150,11 +150,11 @@ void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
                     printf("point 2: %f %f %f\n", point_arr[j]->coordinates[0], point_arr[j]->coordinates[1], point_arr[j]->coordinates[2]);
 
                 }*/
-                adj_matrix->vertexs[i][j] = (double)calc_weight(point_arr[i], point_arr[j], dim);
-                adj_matrix->vertexs[j][i] = adj_matrix->vertexs[i][j];
+                adj_matrix->vertices[i][j] = (double)calc_weight(point_arr[i], point_arr[j], dim);
+                adj_matrix->vertices[j][i] = adj_matrix->vertices[i][j];
             }
         }
-        adj_matrix->vertexs[i][i] = 0;
+        adj_matrix->vertices[i][i] = 0;
     }
 }
 
@@ -184,15 +184,15 @@ void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix)
     /*calc D^(-0.5)*/
     int i;
     double row_sum;
-    diag_mat->vertexs = calloc(diag_mat->rows, sizeof(double*));
+    diag_mat->vertices = calloc(diag_mat->rows, sizeof(double*));
     for(i=0; i<diag_mat->rows;i++)
     {
-        diag_mat->vertexs[i] = calloc(diag_mat->rows, sizeof(double));
-        assert(diag_mat->vertexs[i] != NULL);
+        diag_mat->vertices[i] = calloc(diag_mat->rows, sizeof(double));
+        assert(diag_mat->vertices[i] != NULL);
         row_sum = calc_row_sum(adj_matrix, i);
         if(row_sum>0)
         {
-            diag_mat->vertexs[i][i] = 1/sqrt(row_sum);
+            diag_mat->vertices[i][i] = 1 / sqrt(row_sum);
         }
     }
 }
@@ -203,7 +203,7 @@ double calc_row_sum(Matrix * adj_matrix, int row)
     double res;
     for(i=0; i<adj_matrix->rows;i++)
     {
-        res+= adj_matrix->vertexs[row][i];
+        res+= adj_matrix->vertices[row][i];
     }
     return res;
 }
@@ -221,11 +221,11 @@ void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * 
         {
             if(is_first_diag)
             {
-                res->vertexs[i][j] += (first->vertexs[i][i])*(sec->vertexs[i][j]); 
+                res->vertices[i][j] += (first->vertices[i][i]) * (sec->vertices[i][j]);
             }
             else /*sec mat must be diagonal*/
             {
-                res->vertexs[i][j] += (first->vertexs[i][j])*(sec->vertexs[j][j]); 
+                res->vertices[i][j] += (first->vertices[i][j]) * (sec->vertices[j][j]);
 
             }
         }
@@ -243,12 +243,12 @@ void to_l_norm(Matrix *mat)
         {
             if(i==j)
             {
-                mat->vertexs[i][j] = 1-mat->vertexs[i][j];
+                mat->vertices[i][j] = 1 - mat->vertices[i][j];
 
             }
             else
             {
-                mat->vertexs[i][j] = (-1)*(mat->vertexs[i][j]);
+                mat->vertices[i][j] = (-1) * (mat->vertices[i][j]);
             }
         }
     }
@@ -264,9 +264,9 @@ void print_mat(Matrix *mat)
     {
         for (j = 0; j < mat->columns; j++)
         {
-            a = mat->vertexs[i][j];
-            printf("%f, ", mat->vertexs[i][j]);
-            if(mat->vertexs[i][j]>0.00001 || mat->vertexs[i][j]<-0.0001)
+            a = mat->vertices[i][j];
+            printf("%f, ", mat->vertices[i][j]);
+            if(mat->vertices[i][j] > 0.00001 || mat->vertices[i][j] < -0.0001)
             {
                 count++;
             }
@@ -288,11 +288,11 @@ Matrix* normalize_matrix(Matrix* mat){
     assert(normalized_row!=NULL);
     normalized_matrix->rows = mat->rows;
     normalized_matrix->columns = mat->columns;
-    normalized_matrix->vertexs = (double **) calloc(mat->rows, sizeof (double *));
-    assert(normalized_matrix->vertexs!=NULL);
+    normalized_matrix->vertices = (double **) calloc(mat->rows, sizeof (double *));
+    assert(normalized_matrix->vertices != NULL);
     for (i=0; i<mat->rows; i++){
-        normalized_row = normalize_row(mat->vertexs[i], mat->columns);
-        normalized_matrix->vertexs[i] = normalized_row;
+        normalized_row = normalize_row(mat->vertices[i], mat->columns);
+        normalized_matrix->vertices[i] = normalized_row;
     }
     return normalized_matrix;
 }
@@ -340,16 +340,16 @@ void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matri
     for (i=0; i< n; i++){
         point_arr[i] = (Point*) calloc(1, sizeof (Point));
         assert(point_arr[i]!=NULL);
-        point_arr[i]->coordinates = mat->vertexs[i];
+        point_arr[i]->coordinates = mat->vertices[i];
         if (i<k){
             clusters[i] = calloc(1, sizeof (Point));
             assert(clusters[i]!=NULL);
             clusters[i]->curr_centroid = (double *) calloc(dim+1, sizeof (double ));
             assert(clusters[i]->curr_centroid!=NULL);
-            copy_centroid(mat->vertexs[i], clusters[i]->curr_centroid, dim);
+            copy_centroid(mat->vertices[i], clusters[i]->curr_centroid, dim);
             clusters[i]->prev_centroid = (double *) calloc(dim+1, sizeof (double ));
             assert(clusters[i]->prev_centroid!=NULL);
-            copy_centroid(mat->vertexs[i], clusters[i]->prev_centroid, dim);
+            copy_centroid(mat->vertices[i], clusters[i]->prev_centroid, dim);
             clusters[i]->size++;
             point_arr[i]->cluster = i;
         }
@@ -369,7 +369,7 @@ void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matri
 
         update_centroids(clusters, point_arr, k, dim, n);
         count++;
-        differ = check_difference_in_centroides(clusters, k, dim);
+        differ = check_difference_in_centroids(clusters, k, dim);
 
     }
     for (i=0; i<n; i++){
@@ -429,7 +429,7 @@ int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int 
 /*This function gets a cluster (and k+dim). Its returns:
 1 - if there is a any difference between the "cerrent" and "prev" of any cluster
 0 - otherwise   */
-int check_difference_in_centroides(Cluster** clusters, int k, int dim)
+int check_difference_in_centroids(Cluster** clusters, int k, int dim)
 {
     int i, j;
     /*for each cluster*/
@@ -559,28 +559,28 @@ int tester_main(int argc, char** argv){
     mat = (Matrix*) calloc(1, sizeof (Matrix));
     mat->rows=6;
     mat->columns=3;
-    mat->vertexs = (double **) calloc(mat->rows, sizeof (double *));
+    mat->vertices = (double **) calloc(mat->rows, sizeof (double *));
     for (i=0; i<mat->rows; i++){
-        mat->vertexs[i] = (double *) calloc(mat->columns, sizeof (double ));
+        mat->vertices[i] = (double *) calloc(mat->columns, sizeof (double ));
     }
-    mat->vertexs[0][0] = 8.1402;
-    mat->vertexs[0][1] =-5.8022;
-    mat->vertexs[0][2] =-7.2376;
-    mat->vertexs[1][0] =10.1626;
-    mat->vertexs[1][1] =-7.4824;
-    mat->vertexs[1][2] =-6.5774;
-    mat->vertexs[2][0] =9.3153;
-    mat->vertexs[2][1] =-5.4974;
-    mat->vertexs[2][2] =-6.7025;
-    mat->vertexs[3][0] =9.7950;
-    mat->vertexs[3][1] =-5.2550;
-    mat->vertexs[3][2] =-9.1757;
-    mat->vertexs[4][0] =7.9095;
-    mat->vertexs[4][1] =-6.6488;
-    mat->vertexs[4][2] =-7.6088;
-    mat->vertexs[5][0] =10.3309;
-    mat->vertexs[5][1] =-5.3494;
-    mat->vertexs[5][2] =-5.9993;
+    mat->vertices[0][0] = 8.1402;
+    mat->vertices[0][1] =-5.8022;
+    mat->vertices[0][2] =-7.2376;
+    mat->vertices[1][0] =10.1626;
+    mat->vertices[1][1] =-7.4824;
+    mat->vertices[1][2] =-6.5774;
+    mat->vertices[2][0] =9.3153;
+    mat->vertices[2][1] =-5.4974;
+    mat->vertices[2][2] =-6.7025;
+    mat->vertices[3][0] =9.7950;
+    mat->vertices[3][1] =-5.2550;
+    mat->vertices[3][2] =-9.1757;
+    mat->vertices[4][0] =7.9095;
+    mat->vertices[4][1] =-6.6488;
+    mat->vertices[4][2] =-7.6088;
+    mat->vertices[5][0] =10.3309;
+    mat->vertices[5][1] =-5.3494;
+    mat->vertices[5][2] =-5.9993;
 
     kmeans(mat, 3);
     normalized_matrix = normalize_matrix(mat);
@@ -684,21 +684,21 @@ int main(int argc, char** argv)
     l_norm_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(l_norm_mat != NULL);
     l_norm_mat->rows = n;
-    l_norm_mat->vertexs = calloc(n, sizeof(double*));
+    l_norm_mat->vertices = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
-        l_norm_mat->vertexs[i] = calloc(n, sizeof(double));
-        assert(l_norm_mat->vertexs[i] != NULL);
+        l_norm_mat->vertices[i] = calloc(n, sizeof(double));
+        assert(l_norm_mat->vertices[i] != NULL);
     }
 
     temp_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(temp_mat != NULL);
     temp_mat->rows = n;
-    temp_mat->vertexs = calloc(n, sizeof(double*));
+    temp_mat->vertices = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
-        temp_mat->vertexs[i] = calloc(n, sizeof(double));
-        assert(temp_mat->vertexs[i] != NULL);
+        temp_mat->vertices[i] = calloc(n, sizeof(double));
+        assert(temp_mat->vertices[i] != NULL);
     }
 
     printf("The weight adj mat is:\n");
@@ -735,10 +735,10 @@ int main(int argc, char** argv)
         free(point_arr[i]->coordinates);
         free(point_arr[i]);
 
-        free(adj_matrix->vertexs[i]);
-        free(diag_degree_mat->vertexs[i]);
-        free(l_norm_mat->vertexs[i]);
-        free(temp_mat->vertexs[i]);
+        free(adj_matrix->vertices[i]);
+        free(diag_degree_mat->vertices[i]);
+        free(l_norm_mat->vertices[i]);
+        free(temp_mat->vertices[i]);
     }
     free(point_arr);
     free(adj_matrix);
