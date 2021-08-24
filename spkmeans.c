@@ -15,7 +15,8 @@ typedef struct Point{
 } Point;
 
 typedef struct Matrix{
-    int size;
+    int rows;
+    int columns;
     double** vertexs;
 } Matrix;
 
@@ -31,6 +32,17 @@ double calc_row_sum(Matrix * adj_matrix, int row);
 void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * res);
 void print_mat(Matrix *mat);
 void to_l_norm(Matrix *mat);
+Matrix* normalize_matrix(Matrix* mat);
+double* normalize_row(double* row, int elements_in_row);
+
+
+void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matrix* mat);
+int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points, int first_insert, int dim, int k);
+double find_distance(Point* point, Cluster* cluster, int dim);
+void print_c(Cluster *cluster, int dim);
+int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
+int check_difference_in_centroides(Cluster** clusters, int k, int dim);
+
 
 int get_num_points(FILE *filename)
 {
@@ -117,15 +129,15 @@ void input_to_points_struct(FILE *filename, Point** point_arr, int dim)
 void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
 {
     int i,j;
-    adj_matrix->vertexs = calloc(adj_matrix->size, sizeof(double*));
+    adj_matrix->vertexs = calloc(adj_matrix->rows, sizeof(double*));
     
-    for(i=0; i<adj_matrix->size;i++)
+    for(i=0; i<adj_matrix->rows;i++)
     {
-        adj_matrix->vertexs[i] = calloc(adj_matrix->size, sizeof(double));
+        adj_matrix->vertexs[i] = calloc(adj_matrix->rows, sizeof(double));
         assert(adj_matrix->vertexs[i] != NULL);
     }
     
-    for(i=0; i<adj_matrix->size;i++)
+    for(i=0; i<adj_matrix->rows;i++)
     {
         for(j=0;j<=i;j++)
         {
@@ -171,10 +183,10 @@ void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix)
     /*calc D^(-0.5)*/
     int i;
     double row_sum;
-    diag_mat->vertexs = calloc(diag_mat->size, sizeof(double*));
-    for(i=0; i<diag_mat->size;i++)
+    diag_mat->vertexs = calloc(diag_mat->rows, sizeof(double*));
+    for(i=0; i<diag_mat->rows;i++)
     {
-        diag_mat->vertexs[i] = calloc(diag_mat->size, sizeof(double));
+        diag_mat->vertexs[i] = calloc(diag_mat->rows, sizeof(double));
         assert(diag_mat->vertexs[i] != NULL);
         row_sum = calc_row_sum(adj_matrix, i);
         if(row_sum>0)
@@ -188,7 +200,7 @@ double calc_row_sum(Matrix * adj_matrix, int row)
 {
     int i;
     double res;
-    for(i=0; i<adj_matrix->size;i++)
+    for(i=0; i<adj_matrix->rows;i++)
     {
         res+= adj_matrix->vertexs[row][i];
     }
@@ -202,9 +214,9 @@ void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * 
     
     /*One of the matrixex MUST be diagonal! */
     
-    for (i = 0; i < first->size; i++)
+    for (i = 0; i < first->rows; i++)
     {
-        for (j = 0; j < first->size; j++)
+        for (j = 0; j < first->rows; j++)
         {
             if(is_first_diag)
             {
@@ -224,9 +236,9 @@ void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * 
 void to_l_norm(Matrix *mat)
 {
     int i,j;
-    for (i = 0; i < mat->size; i++)
+    for (i = 0; i < mat->rows; i++)
     {
-        for (j = 0; j < mat->size; j++)
+        for (j = 0; j < mat->rows; j++)
         {
             if(i==j)
             {
@@ -246,9 +258,9 @@ void print_mat(Matrix *mat)
 {
     int i, j, count;
     count = 0;
-    for (i = 0; i < mat->size; i++)
+    for (i = 0; i < mat->rows; i++)
     {
-        for (j = 0; j < mat->size; j++)
+        for (j = 0; j < mat->rows; j++)
         {
             printf("%f, ", mat->vertexs[i][j]);
             if(mat->vertexs[i][j]>0.00001 || mat->vertexs[i][j]<-0.0001)
@@ -262,7 +274,311 @@ void print_mat(Matrix *mat)
     
 }
 
-int main(int argc, char** argv)
+Matrix* normalize_matrix(Matrix* mat){
+    int i;
+    Matrix* normalized_matrix;
+    double* normalized_row;
+
+    normalized_matrix = (Matrix*) calloc(1, sizeof(Matrix));
+    assert(normalized_row!=NULL);
+    normalized_matrix->rows = mat->rows;
+    normalized_matrix->columns = mat->columns;
+    normalized_matrix->vertexs = (double **) calloc(mat->rows, sizeof (double *));
+    assert(normalized_matrix->vertexs!=NULL);
+    for (i=0; i<mat->rows; i++){
+        normalized_row = normalize_row(mat->vertexs[i], mat->columns);
+        normalized_matrix->vertexs[i] = normalized_row;
+    }
+    return normalized_matrix;
+}
+
+double* normalize_row(double* row, int elements_in_row){
+    double sum_of_squares, denominator, a;
+    double* normalized_row;
+    int i;
+
+    sum_of_squares=0;
+    for (i=0; i<elements_in_row; i++){
+        sum_of_squares+= pow(row[i], 2);
+    }
+    denominator = pow(sum_of_squares, 0.5);
+
+    normalized_row = (double *) calloc(elements_in_row, sizeof (double ));
+    assert(normalized_row!=NULL);
+    for (i=0; i<elements_in_row; i++){
+        normalized_row[i] = row[i]/denominator;
+    }
+    return normalized_row;
+}
+
+void copy_centroid(double* from, double* to, int dim){
+    int i;
+    for (i=0;i<dim; i++){
+        to[i] = from[i];
+    }
+}
+
+void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matrix* mat){
+    int cnt, i, count, q;
+    int differ;
+    double value;
+    char ch;
+    Point** point_arr;
+    differ =1;
+    cnt = 0;
+    i=0;
+    point_arr = (Point**) calloc(n, sizeof(Point*));
+    assert(point_arr != NULL);
+
+    for (i=0; i< n; i++){
+        point_arr[i] = (Point*) calloc(1, sizeof (Point));
+        assert(point_arr[i]!=NULL);
+        point_arr[i]->coordinates = mat->vertexs[i];
+        if (i<k){
+            clusters[i] = calloc(1, sizeof (Point));
+            assert(clusters[i]!=NULL);
+            clusters[i]->curr_centroid = (double *) calloc(dim+1, sizeof (double ));
+            assert(clusters[i]->curr_centroid!=NULL);
+            copy_centroid(mat->vertexs[i], clusters[i]->curr_centroid, dim);
+            clusters[i]->prev_centroid = (double *) calloc(dim+1, sizeof (double ));
+            assert(clusters[i]->prev_centroid!=NULL);
+            copy_centroid(mat->vertexs[i], clusters[i]->prev_centroid, dim);
+            clusters[i]->size++;
+            point_arr[i]->cluster = i;
+        }
+    }
+    for (i=k; i<n; i++){
+        assign_to_closest_cluster(i, clusters, point_arr, 1, dim, k);
+    }
+
+    count = 1;
+
+    while((count < max_iter) && differ)
+    {
+        for(q=0; q<n; q++)
+        {
+            assign_to_closest_cluster(q, clusters, point_arr, 0, dim, k);
+        }
+
+        update_centroids(clusters, point_arr, k, dim, n);
+        count++;
+        differ = check_difference_in_centroides(clusters, k, dim);
+
+    }
+    for (i=0; i<n; i++){
+        free(point_arr[i]->coordinates);
+    }
+    free(point_arr);
+
+}
+
+/*This function gets a cluster 2D array, a point array, and k+dim. Its return a new Cluster 2D object
+ where the curr_centroid array is updated  */
+int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n)
+{
+    int i;
+    int j;
+    int t;
+    int first_loop;
+    first_loop =1;
+
+    /*for each cluster*/
+    for(i=0; i<k; i++)
+    {
+        /*for each point*/
+        for(j=0; j<n; j++)
+        {
+            /* if this point in the cluster*/
+            if(point_arr[j]->cluster == i)
+            {
+                /* each coordinate */
+                for(t=0; t<dim; t++)
+                {
+                    if(first_loop)
+                    {
+                        clusters[i]->prev_centroid[t] = clusters[i]->curr_centroid[t];
+                        clusters[i]->curr_centroid[t] = 0.0000L;
+                    }
+                    clusters[i]->curr_centroid[t] += point_arr[j]->coordinates[t];
+
+                }
+                first_loop = 0;
+            }
+        }
+        /* after we sum the coordinated, we will divied each one of them in the sum*/
+        if(clusters[i]->size > 1)
+        {
+            for(t=0; t<dim; t++)
+            {
+                clusters[i]->curr_centroid[t] = (clusters[i]->curr_centroid[t]) / (clusters[i]->size);
+
+            }
+        }
+        first_loop = 1;
+    }
+    return 1;
+}
+
+/*This function gets a cluster (and k+dim). Its returns:
+1 - if there is a any difference between the "cerrent" and "prev" of any cluster
+0 - otherwise   */
+int check_difference_in_centroides(Cluster** clusters, int k, int dim)
+{
+    int i, j;
+    /*for each cluster*/
+    for(i=0; i<k; i++)
+    {
+        /*for each coordinate in the centroid */
+        for(j=0; j<dim; j++)
+        {
+            if(clusters[i]->curr_centroid[j]!=clusters[i]->prev_centroid[j])
+            {
+                return 1; /* we found a difference */
+            }
+        }
+    }
+
+    return 0; /* all of the centroides are the same*/
+}
+
+int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points, int first_insert, int dim, int k)
+{
+    int i, index, prev_index;
+    double min_distance, curr_distance;
+    if(first_insert)
+    {
+        min_distance = find_distance(points[point_num], clusters[0], dim);
+        index = 0;
+    }
+    else
+    {
+        index = points[point_num]->cluster;
+        min_distance = find_distance(points[point_num], clusters[points[point_num]->cluster], dim);
+    }
+    /*for all k clusters in*/
+    for (i=0; i<k; i++)
+    {
+        curr_distance = find_distance(points[point_num], clusters[i], dim);
+        if (curr_distance<min_distance)
+        {
+            min_distance = curr_distance;
+            index = i; /* change point index to this cluster*/
+        }
+    }
+    /* need to add the point to relevant cluster only */
+    if (first_insert)
+    {
+        points[point_num]->cluster = index;
+        clusters[index]->size+=1;
+    }
+
+        /* need to add the point to relevant cluster + delete it from previos one*/
+    else
+    {
+        /*remove from old cluster*/
+        prev_index = points[point_num]->cluster;
+        clusters[prev_index]->size--;
+        /*add to new cluster*/
+        points[point_num]->cluster = index;
+        clusters[index]->size++;
+    }
+    return 0;
+}
+
+
+double find_distance(Point* point, Cluster* cluster, int dim)
+{
+    int i;
+    double distance, res;
+    res = 0.0000L;
+    for (i=0; i<dim; i++){
+        distance = (point->coordinates[i] - cluster->curr_centroid[i]);
+        distance = distance * distance;
+        res+=distance;
+    }
+    return res;
+}
+
+void print_c(Cluster *cluster, int dim)
+{
+    int i;
+    for (i=0; i<dim; ++i)
+    {
+        printf("%.4f",cluster->curr_centroid[i]);
+        if(i!=(dim-1))
+        {
+            printf(",");
+        }
+    }
+}
+
+
+int kmeans(Matrix* mat, int k){
+
+    int max_iter, n, dim, i;
+    Cluster** clusters;
+
+    max_iter = 300;
+
+    n = mat->rows;
+    dim = mat->columns;
+    clusters = (Cluster**) calloc(k, sizeof(Cluster*));
+    assert(clusters != NULL);
+
+    kmeans_logic(clusters, k, n, dim, max_iter, mat);
+
+    for (i=0; i<k; i++)
+    {
+        print_c(clusters[i], dim);
+        if (i!=k)
+            printf("\n");
+    }
+
+    for (i=0; i<k; i++){
+        free(clusters[i]->curr_centroid);
+        free(clusters[i]->prev_centroid);
+    }
+
+    free(clusters);
+
+
+    return 1;
+}
+int main(int argc, char** argv){
+    Matrix* mat;
+    int i;
+
+    mat = (Matrix*) calloc(1, sizeof (Matrix));
+    mat->rows=6;
+    mat->columns=3;
+    mat->vertexs = (double **) calloc(mat->rows, sizeof (double *));
+    for (i=0; i<mat->rows; i++){
+        mat->vertexs[i] = (double *) calloc(mat->columns, sizeof (double ));
+    }
+    mat->vertexs[0][0] = 8.1402;
+    mat->vertexs[0][1] =-5.8022;
+    mat->vertexs[0][2] =-7.2376;
+    mat->vertexs[1][0] =10.1626;
+    mat->vertexs[1][1] =-7.4824;
+    mat->vertexs[1][2] =-6.5774;
+    mat->vertexs[2][0] =9.3153;
+    mat->vertexs[2][1] =-5.4974;
+    mat->vertexs[2][2] =-6.7025;
+    mat->vertexs[3][0] =9.7950;
+    mat->vertexs[3][1] =-5.2550;
+    mat->vertexs[3][2] =-9.1757;
+    mat->vertexs[4][0] =7.9095;
+    mat->vertexs[4][1] =-6.6488;
+    mat->vertexs[4][2] =-7.6088;
+    mat->vertexs[5][0] =10.3309;
+    mat->vertexs[5][1] =-5.3494;
+    mat->vertexs[5][2] =-5.9993;
+
+    kmeans(mat, 3);
+
+}
+
+int maint(int argc, char** argv)
 {
     /*CMD: prog_name, k, goal, file.mane*/
     /*  ---- Declaration ----  */
@@ -345,19 +661,19 @@ int main(int argc, char** argv)
     /*---- Weighted Adjacency Matrix----*/
     adj_matrix = (Matrix*) calloc(n, sizeof(double*));
     assert(adj_matrix != NULL);
-    adj_matrix->size = n;
+    adj_matrix->rows = n;
     to_weighted_adj_mat(point_arr, adj_matrix, dim);
 
     /*---- Diagonal Degree Matrix ----*/
     diag_degree_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(diag_degree_mat != NULL);
-    diag_degree_mat->size = n;
+    diag_degree_mat->rows = n;
     calc_diagonal_degree_mat(diag_degree_mat, adj_matrix);    
 
     /*---- L Norm Matrix ----*/
     l_norm_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(l_norm_mat != NULL);
-    l_norm_mat->size = n;
+    l_norm_mat->rows = n;
     l_norm_mat->vertexs = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
@@ -367,7 +683,7 @@ int main(int argc, char** argv)
 
     temp_mat = (Matrix*) calloc(n, sizeof(double*));
     assert(temp_mat != NULL);
-    temp_mat->size = n;
+    temp_mat->rows = n;
     temp_mat->vertexs = calloc(n, sizeof(double*));
     for(i=0; i<n;i++)
     {
