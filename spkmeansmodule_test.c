@@ -68,16 +68,16 @@ static PyObject* c_code(PyObject *self, PyObject *args){
 
         return res;
     }
-    else if (goal == 1){
+    if (goal == 1){
         main_logic(k, "wam", point_arr, n, dim, 1);
     }
-    else if (goal == 2){
+    if (goal == 2){
         main_logic(k, "ddg", point_arr, n, dim, 1);
     }
-    else if (goal == 3){
+    if (goal == 3){
         main_logic(k, "lnorm", point_arr, n, dim, 1);
     }
-    else if (goal==4){
+    if (goal==4){
         main_logic(k, "jacobi", point_arr, n, dim, 1);
     }
     return NULL;
@@ -142,7 +142,8 @@ static PyMethodDef _methods[] = {
         {NULL, NULL, 0, NULL}   /* sentinel */
 };
 
- static struct PyModuleDef _moduledef = {
+
+static struct PyModuleDef _moduledef ={
         PyModuleDef_HEAD_INIT,
         "mykmeanssp",
         NULL,

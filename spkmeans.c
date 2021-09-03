@@ -1,63 +1,9 @@
+#include "spkmeans.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
 #include <string.h>
-
-#define EPSILON pow(10,-15)
-#define MAX_LOOPS 100
-
-typedef struct Cluster{
-    int size;
-    double* prev_centroid;
-    double* curr_centroid;
-} Cluster;
-
-typedef struct Point{
-    int cluster;
-    double* coordinates;
-} Point;
-
-typedef struct Matrix{
-    int rows;
-    int cols;
-    double** vertices;
-} Matrix;
-
-typedef struct Eigen{
-    int n;
-    double * eigen_vector;
-    double eigen_value;
-}Eigen;
-
-int get_num_points(FILE *filename);
-int get_dim(FILE *filename);
-int is_int(char* p);
-void input_to_points_struct(FILE *filename, Point** point_arr, int dim);
-void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim);
-double calc_weight(Point *first, Point *sec, int dim);
-void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix);
-double calc_row_sum(Matrix * adj_matrix, int row);
-void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * res);
-double off_diag_squares_sum(Matrix * mat);
-void print_mat(Matrix *mat);
-int eigengap_heuristic(double* eigenvalues, int n);
-void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat);
-void init_to_identity(Matrix* mat);
-void init_mat(Matrix* mat);
-void copy_mat_a_to_b(Matrix* mat_a, Matrix* mat_b);
-void to_l_norm(Matrix *mat);
-
-Matrix* normalize_matrix(Matrix* mat);
-double* normalize_row(double* row, int elements_in_row);
-
-
-void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matrix* mat);
-int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points, int first_insert, int dim, int k);
-double find_distance(Point* point, Cluster* cluster, int dim);
-void print_c(Cluster *cluster, int dim);
-int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
-int check_difference_in_centroids(Cluster** clusters, int k, int dim);
 
 int get_num_points(FILE *filename)
 {
@@ -549,8 +495,6 @@ void eigen_struct_to_matrix(Matrix * u_mat, Eigen ** final_eigen, int k)
     return;
 }
 
-
-
 /**step 5 functions**/
 
 Matrix* normalize_matrix(Matrix* mat){
@@ -598,40 +542,64 @@ void copy_centroid(double* from, double* to, int dim){
         to[i] = from[i];
     }
 }
+/** kmeans **/
 
-void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matrix* mat){
-    int i, count, q;
+void kmeans(double** python_points, int* initial_centroid_indices,
+            Cluster** clusters, int k, int n, int dim){
+    int i, j, t, count, q, centroid_index, w;
     int differ;
-    Point** point_arr;
+    struct Point** point_arr;
+
     differ =1;
     i=0;
-    point_arr = (Point**) calloc(n, sizeof(Point*));
+    point_arr = (struct Point**) calloc(n, sizeof(struct Point*));
     assert(point_arr != NULL);
 
-    for (i=0; i< n; i++){
-        point_arr[i] = (Point*) calloc(1, sizeof (Point));
-        assert(point_arr[i]!=NULL);
-        point_arr[i]->coordinates = mat->vertices[i];
-        if (i<k){
-            clusters[i] = calloc(1, sizeof (Point));
-            assert(clusters[i]!=NULL);
-            clusters[i]->curr_centroid = (double *) calloc(dim+1, sizeof (double ));
-            assert(clusters[i]->curr_centroid!=NULL);
-            copy_centroid(mat->vertices[i], clusters[i]->curr_centroid, dim);
-            clusters[i]->prev_centroid = (double *) calloc(dim+1, sizeof (double ));
-            assert(clusters[i]->prev_centroid!=NULL);
-            copy_centroid(mat->vertices[i], clusters[i]->prev_centroid, dim);
-            clusters[i]->size++;
-            point_arr[i]->cluster = i;
+    /* initialize+adapt Point array (as a struct)*/
+    for(j=0; j<n; j++)
+    {
+        point_arr[j] = malloc(sizeof(struct Point));
+        assert(point_arr[j] != NULL);
+        point_arr[j]->coordinates = calloc(dim+1, sizeof(double));
+        assert(point_arr[j]->coordinates != NULL);
+        /*adapting from python to c */
+        point_arr[j]->coordinates = python_points[j];
+        point_arr[j]->cluster = -1;
+    }
+
+
+    /* initialize+adapt Clusters array (as a struct)*/
+    for(t=0; t<k; t++)
+    {
+        clusters[t] = malloc(sizeof(Cluster*));
+        assert(clusters[t] != NULL);
+        clusters[t]->curr_centroid = (double*) malloc((dim+1)*sizeof(double));
+        assert(clusters[t]->curr_centroid != NULL);
+        clusters[t]->prev_centroid = (double*) malloc((dim+1)*sizeof(double));
+        assert(clusters[t]->prev_centroid != NULL);
+        /*adapting from python to c:
+        updating the clusters of the points that were already classified as centroids*/
+        point_arr[initial_centroid_indices[t]]->cluster = t;
+        centroid_index = initial_centroid_indices[t];
+        /*point_arr[centroid_index]->cluster = centroid_index;*/
+        clusters[t]->size = 1;
+        for(w=0; w<dim; w++)
+        {
+            clusters[t]->curr_centroid[w] = python_points[centroid_index][w];
+            clusters[t]->prev_centroid[w] = python_points[centroid_index][w];
         }
     }
-    for (i=k; i<n; i++){
-        assign_to_closest_cluster(i, clusters, point_arr, 1, dim, k);
+    for (i=0; i<n; i++){
+        /*assign the points that were not classfied yet to a centroid*/
+        if(point_arr[i]->cluster==-1)
+        {
+            assign_to_closest_cluster(i, clusters, point_arr, 1, dim, k);
+        }
     }
-
+    update_centroids(clusters, point_arr, k, dim, n);
     count = 1;
 
-    while((count < max_iter) && differ)
+    while((count < MAX_ITER) && differ)
     {
         for(q=0; q<n; q++)
         {
@@ -641,64 +609,68 @@ void kmeans_logic(Cluster** clusters, int k, int n, int dim, int max_iter, Matri
         update_centroids(clusters, point_arr, k, dim, n);
         count++;
         differ = check_difference_in_centroids(clusters, k, dim);
-
     }
+
+    for (i=0;i<k;i++){
+        print_c(clusters[i], dim);
+    }
+
     for (i=0; i<n; i++){
         free(point_arr[i]->coordinates);
+    }
+    for (i=0;i<n;i++){
+        free(point_arr[i]);
     }
     free(point_arr);
 
 }
 
-/*This function gets a cluster 2D array, a point array, and k+dim. Its return a new Cluster 2D object
- where the curr_centroid array is updated  */
-int update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n)
-{
-    int i;
-    int j;
-    int t;
-    int first_loop;
-    first_loop =1;
 
-    /*for each cluster*/
+
+/*This function gets a 2d cluster array, a point array, and k+dim. It returns a new Cluster 2D object
+ where the curr_centroid array is updated  */
+void update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n)
+{
+    int i, j, t;
+    /*update current centroid to previous one in each cluster*/
     for(i=0; i<k; i++)
     {
-        /*for each point*/
-        for(j=0; j<n; j++)
+        /* each coordinate */
+        for(t=0; t<dim; t++)
         {
-            /* if this point in the cluster*/
-            if(point_arr[j]->cluster == i)
-            {
-                /* each coordinate */
-                for(t=0; t<dim; t++)
-                {
-                    if(first_loop)
-                    {
-                        clusters[i]->prev_centroid[t] = clusters[i]->curr_centroid[t];
-                        clusters[i]->curr_centroid[t] = 0.0000L;
-                    }
-                    clusters[i]->curr_centroid[t] += point_arr[j]->coordinates[t];
-
-                }
-                first_loop = 0;
-            }
+            clusters[i]->prev_centroid[t] = clusters[i]->curr_centroid[t];
+            clusters[i]->curr_centroid[t] = 0.0000L;
         }
-        /* after we sum the coordinated, we will divied each one of them in the sum*/
+    }
+
+    i=0;
+    /*for each point*/
+    for(j=0; j<n; j++)
+    {
+        /* Save the point cluster*/
+        i = point_arr[j]->cluster;
+        /* each coordinate */
+        for(t=0; t<dim; t++)
+        {
+            clusters[i]->curr_centroid[t] += point_arr[j]->coordinates[t];
+        }
+
+    }
+    /* after we sum the coordinated, we divied each one of them by the sum*/
+    for(i=0; i<k; i++)
+    {
         if(clusters[i]->size > 1)
         {
             for(t=0; t<dim; t++)
             {
                 clusters[i]->curr_centroid[t] = (clusters[i]->curr_centroid[t]) / (clusters[i]->size);
-
             }
         }
-        first_loop = 1;
     }
-    return 1;
 }
 
-/*This function gets a cluster (and k+dim). Its returns:
-1 - if there is a any difference between the "cerrent" and "prev" of any cluster
+/*This function gets a cluster (and k+dim). It returns:
+1 - if there is a any difference between the "current" and "prev" of any cluster
 0 - otherwise   */
 int check_difference_in_centroids(Cluster** clusters, int k, int dim)
 {
@@ -709,8 +681,7 @@ int check_difference_in_centroids(Cluster** clusters, int k, int dim)
         /*for each coordinate in the centroid */
         for(j=0; j<dim; j++)
         {
-            if(clusters[i]->curr_centroid[j]!=clusters[i]->prev_centroid[j])
-            {
+            if(clusters[i]->curr_centroid[j]!=clusters[i]->prev_centroid[j]){
                 return 1; /* we found a difference */
             }
         }
@@ -750,7 +721,7 @@ int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points,
         clusters[index]->size+=1;
     }
 
-        /* need to add the point to relevant cluster + delete it from previos one*/
+        /* need to add the point to relevant cluster + delete it from previous one*/
     else
     {
         /*remove from old cluster*/
@@ -761,6 +732,7 @@ int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points,
         clusters[index]->size++;
     }
     return 0;
+
 }
 
 
@@ -791,44 +763,10 @@ void print_c(Cluster *cluster, int dim)
 }
 
 
-int kmeans(Matrix* mat, int k){
-
-    int max_iter, n, dim, i;
-    Cluster** clusters;
-
-    max_iter = 300;
-
-    n = mat->rows;
-    dim = mat->cols;
-    clusters = (Cluster**) calloc(k, sizeof(Cluster*));
-    assert(clusters != NULL);
-
-    kmeans_logic(clusters, k, n, dim, max_iter, mat);
-
-    for (i=0; i<k; i++)
-    {
-        print_c(clusters[i], dim);
-        if (i!=k)
-            printf("\n");
-    }
-
-    for (i=0; i<k; i++){
-        free(clusters[i]->curr_centroid);
-        free(clusters[i]->prev_centroid);
-    }
-
-    free(clusters);
-
-
-    return 1;
-}
-
-
-int main_logic(int k, char * goal, char * f_name, int flag)
+Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int flag)
 {
     /*  ---- Declaration ----  */
-    int  n, dim, i, count;
-    FILE *filename;
+    int  i, count, *initial_centroid_indices;
     Matrix* adj_matrix;
     Matrix* diag_degree_mat;
     Matrix* sqrt_diag_degree_mat;
@@ -837,32 +775,12 @@ int main_logic(int k, char * goal, char * f_name, int flag)
 
     Matrix* a_eigenvalues;
     Matrix* v_eigenvectors;
-    Point** point_arr;
     Eigen** final_eigen;
     Matrix* u_matrix;
+    Matrix* t_matrix;
     double* arr_eigenvalues;
     double prev_off_a, cur_off_a;
-
-    /*  ---- Basic Validation ----  */
-    filename = fopen(f_name, "r");
-    if(filename==NULL){
-        printf("Invalid Input!\n");
-        exit(1);
-    }
-
-    /* ---- Calculation of input dimentions (n, dim) ----*/
-    n = get_num_points(filename);
-    dim = get_dim(filename);
-    if (n == 0 || dim == 0 || k>=n){
-        printf("Invalid Input!\n");
-        fclose(filename);
-        exit(1);
-    }
-
-    /*  ---- Input to struct ----  */
-    point_arr = (Point**) calloc(n, sizeof(Point*));
-    assert(point_arr != NULL);
-    input_to_points_struct(filename, point_arr, dim);
+    struct Cluster** clusters;
 
     /* ######## Calculate all relevant matrixes ########*/
 
@@ -986,17 +904,26 @@ int main_logic(int k, char * goal, char * f_name, int flag)
         eigen_struct_to_matrix(u_matrix, final_eigen, k);
         /*############  up to here #############*/
 
+        t_matrix = normalize_matrix(u_matrix);
 
         if(strcmp(goal, "spk")==0)
         {
             if(flag) /* 1 is python, 0 is C*/
             {
-                /*python - T goes to ex2*/
+                return t_matrix;
             }
             else
             {
-                /*C - T goes to ex1*/
+                initial_centroid_indices = (int*) calloc(k, sizeof (int));
+                for (i=0;i<k;i++){
+                    initial_centroid_indices[i] = i;
+                }
+                clusters = (struct Cluster**) calloc(k, sizeof(struct Cluster*));
+                assert(clusters != NULL);
+
+                kmeans(t_matrix->vertices, initial_centroid_indices, clusters, k, n, dim);
             }
+
             printf("In construction :)\n");
         }
         if(strcmp(goal, "jacobi")==0)
@@ -1050,13 +977,13 @@ int main_logic(int k, char * goal, char * f_name, int flag)
         free(sqrt_diag_degree_mat->vertices[i]);
         free(l_norm_mat->vertices[i]);
         free(temp_mat->vertices[i]);
-        if(strcmp(goal, "spk")==0 || strcmp(goal, "spk")==0)
+        /*if(strcmp(goal, "spk")==0 || strcmp(goal, "spk")==0)
         {
             free(a_eigenvalues->vertices[i]);
             free(v_eigenvectors->vertices[i]);
             free(final_eigen[i]->eigen_vector);
             free(final_eigen[i]);
-        }
+        }*/
     }
 
     free(point_arr);
@@ -1065,24 +992,23 @@ int main_logic(int k, char * goal, char * f_name, int flag)
     free(sqrt_diag_degree_mat);
     free(l_norm_mat);
     free(temp_mat);
-    if(strcmp(goal, "spk")== 0 || strcmp(goal, "spk")==0)
+    /*if(strcmp(goal, "spk")== 0 || strcmp(goal, "spk")==0)
     {
         free(a_eigenvalues);
         free(v_eigenvectors);
         free(final_eigen);
         free(arr_eigenvalues);
-    }
-    fclose(filename);
-    return 1;
+    }*/
+    return NULL;
 }
 
 int main(int argc, char** argv)
 {
     /*CMD: prog_name, k, goal, file.mane*/
-
-    int k;
-    char* f_name;
-    char* goal;
+    FILE *data;
+    int k, n, dim;
+    char *goal, *filename;
+    Point **point_arr;
 
     if (argc != 4 || (!is_int(argv[1])))
     {
@@ -1092,8 +1018,28 @@ int main(int argc, char** argv)
 
     k = atoi(argv[1]);
     goal = argv[2];
-    f_name = argv[3];
+    filename = argv[3];
 
-    main_logic(k, goal, f_name, 0);
+    data = fopen(filename, "r");
+    if(data==NULL){
+        printf("Invalid Input!\n");
+        exit(1);
+    }
+
+    /* ---- Calculation of input dimentions (n, dim) ----*/
+    n = get_num_points(data);
+    dim = get_dim(data);
+    if (n == 0 || dim == 0 || k>=n){
+        printf("Invalid Input!\n");
+        fclose(data);
+        exit(1);
+    }
+    /*  ---- Input to struct ----  */
+    point_arr = (Point**) calloc(n, sizeof(Point*));
+    assert(point_arr != NULL);
+    input_to_points_struct(data, point_arr, dim);
+
+    main_logic(k, goal, point_arr, n, dim, 0);
+    fclose(data);
     return 1;
 }
