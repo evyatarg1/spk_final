@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-/*#include <Python.h>*/
 
 #define EPSILON pow(10,-15)
 #define MAX_LOOPS 100
