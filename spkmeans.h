@@ -52,11 +52,11 @@ int eigen_copm(const void * cp1, const void * cp2);
 Matrix* normalize_matrix(Matrix* mat);
 double* normalize_row(double* row, int elements_in_row);
 
-void kmeans(double** python_points, int* initial_centroid_indices, Cluster** clusters, int k, int n, int dim);
+void kmeans(double** observations, int* initial_centroid_indices, Cluster** clusters, int k, int n, int dim);
 int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points, int first_insert, int dim, int k);
 double find_distance(Point* point, Cluster* cluster, int dim);
 void update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
 int check_difference_in_centroids(Cluster** clusters, int k, int dim);
 void print_c(Cluster *cluster, int dim);
+void free_matrix(Matrix* matrix);
 Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int flag);
-

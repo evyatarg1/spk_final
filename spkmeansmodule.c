@@ -14,17 +14,16 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args);
 static PyObject* c_code(PyObject *self, PyObject *args){
     PyObject *p_data, *item, *lst, *current_lst, *res;
     int k, goal, n, dim, i, j;
-    double** data, d_item;
-    Matrix* matrix;
+    double d_item;
+    double** data;
+    Matrix* t_matrix;
     Point** point_arr;
 
-    printf("got to c\n");
-    exit(1);
-    if (!PyArg_ParseTuple(args, "iOiii", &k, &data, &goal, &n, &dim)){
+    if (!PyArg_ParseTuple(args, "iOiii", &k, &p_data, &goal, &n, &dim)){
         return NULL;
     }
 
-    if (!PyList_Check(data)) return NULL;
+    if (!PyList_Check(p_data)) return NULL;
 
     /*convert python list to c 2d array */
     data = (double **) calloc(n, sizeof (double *));
@@ -53,20 +52,26 @@ static PyObject* c_code(PyObject *self, PyObject *args){
             point_arr[i]->coordinates[j] = data[i][j];
         }
     }
+    /*printf("%lf\n", point_arr[0]->coordinates[0]);
+    exit(1);*/
+
+    res = PyList_New(n);
 
     if (goal == 0){
-        matrix = main_logic(k, "spk", point_arr, n, dim, 1);
+        t_matrix = main_logic(k, "spk", point_arr, n, dim, 1);
+        if (t_matrix==NULL){
+            return NULL;
+        }
 
         for (i=0;i<k;i++) {
             current_lst = PyList_New(dim);
             for (j = 0; j < dim; j++) {
-                item = Py_BuildValue("d", matrix->vertices[i][j]);
+                item = Py_BuildValue("d", t_matrix->vertices[i][j]);
                 PyList_SetItem(current_lst, j, item);
             }
             PyList_SetItem(res, i, current_lst);
         }
-
-        return res;
+        free_matrix(t_matrix);
     }
     else if (goal == 1){
         main_logic(k, "wam", point_arr, n, dim, 1);
@@ -80,7 +85,18 @@ static PyObject* c_code(PyObject *self, PyObject *args){
     else if (goal==4){
         main_logic(k, "jacobi", point_arr, n, dim, 1);
     }
-    return NULL;
+
+    for (i=0;i<n;i++){
+        free(data[i]);
+    }
+    free(data);
+
+    for(i=0;i<n;i++){
+        free(point_arr[i]->coordinates);
+        free(point_arr[i]);
+    }
+    free(point_arr);
+    return res;
 }
 
 
@@ -89,7 +105,6 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
     int k, n, dim, i, j, k_item;
     double d_item;
     double **observations;
-    double **final_centroids;
     int *ini_centroid_indices;
     struct Cluster** clusters;
 
@@ -127,10 +142,13 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
 
     kmeans(observations, ini_centroid_indices, clusters, k, n, dim);
 
+    for(i=0;i<n;i++){
+        free(observations[i]);
+    }
     free(observations);
     free(ini_centroid_indices);
+    free(clusters);
 
-    free(final_centroids);
     return NULL;
 }
 
