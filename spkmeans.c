@@ -1008,8 +1008,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     printf("jacobi counter is:%d\n", count);
 
-        printf("jacobi counter is:%d\n", count);
-
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
     assert(arr_eigenvalues != NULL);
     eigenvalues_into_arr(a_eigenvalues, arr_eigenvalues);
@@ -1047,6 +1045,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         print_mat(u_matrix);
         printf("\n\n");
 
+        t_matrix = normalize_matrix(u_matrix);
 
         if(flag) /* 1 is python, 0 is C*/
         {
