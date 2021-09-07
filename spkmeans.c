@@ -56,7 +56,7 @@ int is_int(char* p){
     }
     return 1;
 }
-
+/*
 void input_to_arr(FILE *filename, double** arr, int dim, int n){
     int cnt, i;
     char ch;
@@ -79,10 +79,9 @@ void input_to_arr(FILE *filename, double** arr, int dim, int n){
             cnt++;
         }
     }
-    /*in case that there is no '\n' in the end of the file,
-    and therefore - we will need to init it manualy*/
     arr[n-1][dim-1] = value;
 }
+*/
 void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
 {
     int cnt, i;
@@ -298,14 +297,27 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     {
         for (cur_col = 0; cur_col < a_mat->cols; cur_col++)
         {
-            if(cur_row!=cur_col && (fabs(a_mat->vertices[cur_row][cur_col])>max_val))
+            if(cur_row<cur_col)
             {
-                i = cur_row;
-                j = cur_col;
-                max_val = fabs(a_mat->vertices[cur_row][cur_col]);
+                if(fabs(a_mat->vertices[cur_row][cur_col])==max_val)
+                {
+                    if (cur_row<i || (cur_row==i && cur_col<j))
+                    {
+                        i = cur_row;
+                        j = cur_col;
+                        max_val = fabs(a_mat->vertices[i][j]);
+                    }   
+                }
+                else if(fabs(a_mat->vertices[cur_row][cur_col])>max_val)
+                {
+                    i = cur_row;
+                    j = cur_col;
+                    max_val = fabs(a_mat->vertices[i][j]);
+                }
             }
         }
     }
+    printf("i=%d j=%d\n", i,j);
     /*
     printf("FINAL: i=%d and j=%d \n",i,j);
     printf("FINAL max val is: %f\n", max_val);
@@ -648,7 +660,6 @@ void kmeans(double** observations, int* initial_centroid_indices,
     i=0;
     point_arr = (struct Point**) calloc(n, sizeof(struct Point*));
     assert(point_arr != NULL);
-    printf("got to kmeans\n");
 
     /* initialize+adapt Point array (as a struct)*/
     for(j=0; j<n; j++)
@@ -976,6 +987,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     {
         /*takes from input*/
         points_to_matrix(point_arr, a_eigenvalues);
+        copy_mat_a_to_b(l_norm_mat, a_eigenvalues);
+
     }
     else
     {
@@ -993,11 +1006,17 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
-    printf("epsilon is: %.16f\n", EPSILON);
+
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
+    printf("A in %d loop is:\n", count);
+    print_mat(a_eigenvalues);
+    printf("\n\n");
     do{
         count++;
         converting_a_and_v_mat(a_eigenvalues, v_eigenvectors);
+        printf("A in %d loop is:\n", count);
+        print_mat(a_eigenvalues);
+        printf("\n\n");
         prev_off_a = cur_off_a;
         cur_off_a=off_diag_squares_sum(a_eigenvalues);
         /*printf("prev is: %.16f\n", prev_off_a);
@@ -1005,9 +1024,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         printf("prev - cur is: %.16f\n", prev_off_a-cur_off_a);*/
     } while (count<MAX_LOOPS && (prev_off_a-cur_off_a) > EPSILON);
 
-
+/*
     printf("jacobi counter is:%d\n", count);
-
+*/
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
     assert(arr_eigenvalues != NULL);
     eigenvalues_into_arr(a_eigenvalues, arr_eigenvalues);
@@ -1040,11 +1059,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
-
-        printf("U matrix is (daniella needs to delete this print and continue from here):\n");
-        print_mat(u_matrix);
-        printf("\n\n");
-
         t_matrix = normalize_matrix(u_matrix);
 
         if(flag) /* 1 is python, 0 is C*/
@@ -1086,8 +1100,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
             free_matrix(t_matrix);
 
         }
-
-        printf("In construction :)\n");
     }
 
     if(strcmp(goal, "jacobi")==0)
