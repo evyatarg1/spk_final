@@ -56,32 +56,7 @@ int is_int(char* p){
     }
     return 1;
 }
-/*
-void input_to_arr(FILE *filename, double** arr, int dim, int n){
-    int cnt, i;
-    char ch;
-    double value;
-    cnt = 0;
-    i=0;
 
-    while (fscanf(filename, "%lf%c", &value, &ch) == 2)
-    {
-        if (i==0)
-        {
-            arr[cnt] = (double*) calloc(dim+1, sizeof(double));
-            assert(arr[cnt] != NULL);
-        }
-        arr[cnt][i] = value;
-        i++;
-        if (i==dim)
-        {
-            i=0;
-            cnt++;
-        }
-    }
-    arr[n-1][dim-1] = value;
-}
-*/
 void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
 {
     int cnt, i;
@@ -529,7 +504,6 @@ void print_mat(Matrix * mat)
         }
     }
     /*printf("there are %d cells that are not 0\n", count);*/
-
 }
 
 void print_transpose_mat(Matrix * mat)
@@ -563,6 +537,25 @@ void print_transpose_mat(Matrix * mat)
 
 }
 
+void print_arr(double* arr, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        if(arr[i]<0 && arr[i] > -0.00005)
+        {
+            printf("0.0000");
+        }
+        else
+        {
+            printf("%.4f", arr[i]);
+        }
+        if(i+1!=n)
+        {
+            printf(",");
+        }
+    }
+}
 void init_to_identity(Matrix* mat)
 {
     int i;
@@ -1089,8 +1082,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         sort_eigen_values(final_eigen); /*sorting the eigenvalues for creating U anf for k_heuristic*/
         /*printf("eigen_values after sort: \n%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,\n", final_eigen[0]->eigen_value,final_eigen[1]->eigen_value,final_eigen[2]->eigen_value,final_eigen[3]->eigen_value,final_eigen[4]->eigen_value,final_eigen[5]->eigen_value,final_eigen[6]->eigen_value,final_eigen[7]->eigen_value,final_eigen[8]->eigen_value, final_eigen[9]->eigen_value);*/
         /*############  up to here #############*/
-
-
         if(k==0)
         {
             k = eigengap_heuristic(final_eigen, n);
@@ -1153,22 +1144,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     if(strcmp(goal, "jacobi")==0)
     {
-        /* print the eigen values*/
-        for (i = 0; i < n; i++)
-        {
-            if(arr_eigenvalues[i]<0 && arr_eigenvalues[i] > -0.00005)
-            {
-                printf("0.0000");
-            }
-            else
-            {
-                printf("%.4f", arr_eigenvalues[i]);
-            }
-            if(i+1!=n)
-            {
-                printf(",");
-            }
-        }
+        print_arr(arr_eigenvalues, n); /* print the eigen values*/
         printf("\n");
         print_transpose_mat(v_eigenvectors);
     }
