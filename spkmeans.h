@@ -42,6 +42,7 @@ double calc_row_sum(Matrix * adj_matrix, int row);
 void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * res);
 void to_l_norm(Matrix *mat);
 double off_diag_squares_sum(Matrix * mat);
+void finding_pivot(Matrix* a_mat, int* pivot_arr);
 void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat);
 void eigenvalues_into_arr(Matrix * mat, double * arr);
 void mat_to_eigen_struct(Matrix * a_eigenvalues, Matrix * v_eigenvectors, Eigen** final_eigen);

@@ -59,8 +59,7 @@ int is_int(char* p){
     return 1;
 }
 
-/*This function get a file object that contain a list of points, their dim and the amount of points (n),
-and insert the points into a Point** object*/
+/*This function get a file object that contain a list of points, their dim and the amount of points (n),and insert the points into a Point** object*/
 void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
 {
     int cnt, i;
@@ -96,8 +95,7 @@ void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
     point_arr[n-1]->coordinates[dim-1] = value;
 }
 
-/*This function extracting the points from Point object, and insert them to a Matrix object
-(Both of the objects must be from the same dim)*/
+/*This function extracting the points from Point object, and insert them to a Matrix object (Both of the objects must be from the same dim)*/
 void points_to_matrix(Point ** point_arr, Matrix * mat)
 {
     int i, j;
@@ -110,8 +108,7 @@ void points_to_matrix(Point ** point_arr, Matrix * mat)
     }
 }
 
-/*This function calculating the Weighted Adjacency Matrix (gets a point object, and insert the 
-results into a matrix object)*/
+/*This function calculating the Weighted Adjacency Matrix (gets a point object, and insert the results into a matrix object)*/
 void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
 {
     int i,j;
@@ -173,8 +170,7 @@ void to_sqrt_diag_mat(Matrix* diag_mat)
     }
 }
 
-/*This function gets a amtrix and a row index, and returns the sum of the cells in the given row in the
-matrix*/
+/*This function gets a amtrix and a row index, and returns the sum of the cells in the given row in the matrix*/
 double calc_row_sum(Matrix * adj_matrix, int row)
 {
     int i;
@@ -187,9 +183,7 @@ double calc_row_sum(Matrix * adj_matrix, int row)
     return res;
 }
 
-/*This functions gets 2 matrixes, and mult them, when one of the matrixes must be diagonal 
-(is_first_diag =1 if "first" is diagonal, is_first_diag=0 if "sec" is diagonal).
-the results will be insert into "res" matirx*/
+/*This functions gets 2 matrixes, and mult them, when one of the matrixes must be diagonal (is_first_diag =1 if "first" is diagonal, is_first_diag=0 if "sec" is diagonal). the results will be insert into "res" matirx*/
 void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * res)
 {
     int i, j;
@@ -251,28 +245,14 @@ double off_diag_squares_sum(Matrix * mat)
     return res;
 }
 
-
-/*This function gets an eigenvalues matrix (a_mat), and its eigenvectors matrix (v_mat), and calculates
-one step of the jacobi algorithm simultaneously. The results will be stored in a_mat and v_mat, respectively*/
-void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
+/*This functions gets an eigenvalues mat, and search for the off-diagonal element
+in it with the largest absolute value. Its insert the 2 indices to the given array*/
+void finding_pivot(Matrix* a_mat, int* pivot_arr)
 {
-  int i, j, r, cur_row, cur_col, teta_sign, index;
-    double t, c, s, teta, max_val;
-    double a_ri, a_rj, a_ii, a_jj;
-
-    double * row_i_arr;
-    double * row_j_arr;
-    row_i_arr = (double *) calloc(a_mat->rows, sizeof(double));
-    if(row_i_arr==NULL)
-                printf("An Error Has Occured");
-    assert(row_i_arr != NULL);
-    row_j_arr = (double *) calloc(a_mat->cols, sizeof(double));
-    if(row_j_arr==NULL)
-                printf("An Error Has Occured");
-    assert(row_j_arr != NULL);
-
-    i=0;
-    j=0;
+    int cur_row, cur_col;
+    double max_val;
+    pivot_arr[0] = 0; /*i*/
+    pivot_arr[1] = 0; /*j*/
     max_val=0;
 
     /*finding i,j*/
@@ -284,22 +264,49 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
             {
                 if(fabs(a_mat->vertices[cur_row][cur_col])==max_val)
                 {
-                    if (cur_row<i || (cur_row==i && cur_col<j))
+                    if (cur_row<pivot_arr[0] || (cur_row==pivot_arr[0] && cur_col<pivot_arr[1]))
                     {
-                        i = cur_row;
-                        j = cur_col;
-                        max_val = fabs(a_mat->vertices[i][j]);
+                        pivot_arr[0] = cur_row;
+                        pivot_arr[1] = cur_col;
+                        max_val = fabs(a_mat->vertices[pivot_arr[0]][pivot_arr[1]]);
                     }
                 }
                 else if(fabs(a_mat->vertices[cur_row][cur_col])>max_val)
                 {
-                    i = cur_row;
-                    j = cur_col;
-                    max_val = fabs(a_mat->vertices[i][j]);
+                    pivot_arr[0] = cur_row;
+                    pivot_arr[1] = cur_col;
+                    max_val = fabs(a_mat->vertices[pivot_arr[0]][pivot_arr[1]]);
                 }
             }
         }
     }
+}
+
+/*This function gets an eigenvalues matrix (a_mat), and its eigenvectors matrix (v_mat), and calculates one step of the jacobi algorithm simultaneously. The results will be stored in a_mat and v_mat, respectively*/
+void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
+{
+    int i, j, r, teta_sign, index;
+    double t, c, s, teta, a_ri, a_rj, a_ii, a_jj;
+
+    int* pivot_arr;
+    double * row_i_arr;
+    double * row_j_arr;
+    row_i_arr = (double *) calloc(a_mat->rows, sizeof(double));
+    if(row_i_arr==NULL)
+        printf("An Error Has Occured");
+    assert(row_i_arr != NULL);
+    row_j_arr = (double *) calloc(a_mat->cols, sizeof(double));
+    if(row_j_arr==NULL)
+        printf("An Error Has Occured");
+    assert(row_j_arr != NULL);
+    pivot_arr = (int *) calloc(2, sizeof(int));
+    if(pivot_arr==NULL)
+        printf("An Error Has Occured");
+    assert(pivot_arr != NULL);
+
+    finding_pivot(a_mat, pivot_arr); /*finding relevant i and j*/
+    i=pivot_arr[0];
+    j=pivot_arr[1];
 
     /* coping j-row and i-col*/
     for(index = 0; index < a_mat->rows; index++)
@@ -353,7 +360,7 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
         v_mat->vertices[r][i] = (c*row_i_arr[r]) - (s*row_j_arr[r]);
         v_mat->vertices[r][j] = (s*row_i_arr[r]) + (c*row_j_arr[r]);
     }
-
+    free(pivot_arr);
     free(row_i_arr);
     free(row_j_arr);
     return;
@@ -369,6 +376,7 @@ void eigenvalues_into_arr(Matrix * mat, double * arr)
     }
 }
 
+/*This function gets an eigen valuematrix and eigenvector matrix, and matches each vector to its value in a given Eigen struct */
 void mat_to_eigen_struct(Matrix * a_eigenvalues, Matrix * v_eigenvectors, Eigen** final_eigen)
 {
     int i,j;
@@ -395,6 +403,7 @@ void mat_to_eigen_struct(Matrix * a_eigenvalues, Matrix * v_eigenvectors, Eigen*
     }
 }
 
+/*This function calculate the eigengap Heuristic that will determine the number of clusters k*/
 int eigengap_heuristic(Eigen** eigen, int n)
 {
     int i, max_eigengap_index;
@@ -403,9 +412,7 @@ int eigengap_heuristic(Eigen** eigen, int n)
     max_eigengap_index = 0;
     for (i = 0; i < (int)floor(n/2); i++)
     {
-        /*printf("eigenvalue[%d]=%f\n",i, eigen[i]->eigen_value);*/
         cur_gap = (eigen[i]->eigen_value - eigen[i+1]->eigen_value);
-        /*printf("gap between %d and %d is %f\n",i, i+1, fabs(cur_gap));*/
         if(fabs(cur_gap)>max_eigengap)
         {
             max_eigengap = fabs(cur_gap);
@@ -413,11 +420,11 @@ int eigengap_heuristic(Eigen** eigen, int n)
         }
     }
     /*max+1 due to the fact that the first eigen is 0, but in the constructions its 1*/
-    
-    /*printf("K from inside heuristic is %d\n", max_eigengap_index+1);*/
-    return (max_eigengap_index+1);
+        return (max_eigengap_index+1);
 }
 
+/*This function is the comparator of the qsort function that compares between 2 eigenvalues.
+This ia a stable comparator, therefor in case of 2 identical eigenvalues, the comprator will compare the original indices of the vestors*/
 int eigen_copm(const void * cp1, const void * cp2)
 {
     const Eigen* first = *(const Eigen**) cp1;
@@ -430,9 +437,10 @@ int eigen_copm(const void * cp1, const void * cp2)
     {
         return 1;
     }
-    return ((first->origin_index) - (sec->origin_index));
+    return ((first->origin_index) - (sec->origin_index)); /*identical values, use index*/
 }
 
+/*This function gets an Eigen struct and sort it by its eigen values (stable sort).*/
 void sort_eigen_values(Eigen** final_eigen)
 {
     qsort(final_eigen, final_eigen[0]->n, sizeof(Eigen*), eigen_copm);
@@ -440,6 +448,7 @@ void sort_eigen_values(Eigen** final_eigen)
 }
 
 
+/*This funcion gets a matrix and print it s.t the matrix will be separated by a comma, such that each row is in a line of its own*/
 void print_mat(Matrix * mat)
 {
     int i, j;
@@ -454,7 +463,7 @@ void print_mat(Matrix * mat)
             }
             else
             {
-                printf("%.16f", mat->vertices[i][j]);
+                printf("%.4f", mat->vertices[i][j]);
             }
 
             if(j!=mat->rows-1)
@@ -467,9 +476,9 @@ void print_mat(Matrix * mat)
             printf("\n");
         }
     }
-    /*printf("there are %d cells that are not 0\n", count);*/
 }
 
+/*This funcion gets a matrix and print its transpose matrix s.t the matrix will be separated by a comma, such that each row is in a line of its own*/
 void print_transpose_mat(Matrix * mat)
 {
     int i, j;
@@ -497,10 +506,9 @@ void print_transpose_mat(Matrix * mat)
             printf("\n");
         }
     }
-    /*printf("there are %d cells that are not 0\n", count);*/
-
 }
 
+/*This funcion gets an array and its length, and print it s.t each value will be separated by a comma*/
 void print_arr(double* arr, int n)
 {
     int i;
@@ -520,6 +528,8 @@ void print_arr(double* arr, int n)
         }
     }
 }
+
+/*This function gets a matrix, and its initialize it to the identity*/
 void init_to_identity(Matrix* mat)
 {
     int i;
@@ -534,6 +544,7 @@ void init_to_identity(Matrix* mat)
     }
 }
 
+/*This function gets a matrix, and its initialize it to an empty matrix*/
 void init_mat(Matrix* mat)
 {
     int i;
@@ -547,6 +558,7 @@ void init_mat(Matrix* mat)
     }
 }
 
+/*This function gets to matrixes, and copy the values of the first matrix to the second one*/
 void copy_mat_a_to_b(Matrix* mat_a, Matrix* mat_b)
 {
     int i, j;
@@ -559,6 +571,7 @@ void copy_mat_a_to_b(Matrix* mat_a, Matrix* mat_b)
     }
 }
 
+/*This function gets a matrix and an eigen struct, and copy the vectors in the eigen struc to the matrix as columns*/
 void eigen_struct_to_matrix(Matrix * u_mat, Eigen ** final_eigen)
 {
     int i,j;
@@ -572,8 +585,7 @@ void eigen_struct_to_matrix(Matrix * u_mat, Eigen ** final_eigen)
     return;
 }
 
-/**step 5 functions**/
-
+/*This function gets a matrix, and normalizes it (for step 5)*/
 Matrix* normalize_matrix(Matrix* mat){
     int i;
     Matrix* normalized_matrix;
@@ -597,6 +609,7 @@ Matrix* normalize_matrix(Matrix* mat){
     return normalized_matrix;
 }
 
+/*This function gets a double array that represents a row, and the num of elements in the row, and normalizes the row*/
 double* normalize_row(double* row, int elements_in_row){
     double sum_of_squares, denominator;
     double* normalized_row;
@@ -623,16 +636,15 @@ double* normalize_row(double* row, int elements_in_row){
     return normalized_row;
 }
 
-/**step 6 functions**/
-
+/*This function gets 2 double arrays and copy the first ones values to the second matrix (for step 6)*/
 void copy_centroid(double* from, double* to, int dim){
     int i;
     for (i=0;i<dim; i++){
         to[i] = from[i];
     }
 }
-/** kmeans **/
 
+/* This is ta main function that calculates the kmeans algorithm. */
 void kmeans(double** observations, int* initial_centroid_indices,
             Cluster** clusters, int k, int n, int dim){
 
@@ -716,17 +728,13 @@ void kmeans(double** observations, int* initial_centroid_indices,
         count++;
         differ = check_difference_in_centroids(clusters, k, dim);
     }
-
     for (i=0;i<k;i++){
         print_c(clusters[i], dim, i, k);
     }
-
-
     for (i=0; i<n; i++){
         free(point_arr[i]->coordinates);
         free(point_arr[i]);
     }
-
     free(point_arr);
     for (i=0;i<k;i++){
         free(clusters[i]->curr_centroid);
@@ -734,7 +742,6 @@ void kmeans(double** observations, int* initial_centroid_indices,
         free(clusters[i]);
     }
 }
-
 
 
 /*This function gets a 2d cluster array, a point array, and k+dim. It returns a new Cluster 2D object
@@ -800,6 +807,7 @@ int check_difference_in_centroids(Cluster** clusters, int k, int dim)
     return 0; /* all of the centroides are the same*/
 }
 
+/*This function gets a point number, the points array, and the clusters array, and marches the point the the closest cluster*/
 int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points, int first_insert, int dim, int k)
 {
     int i, index, prev_index;
@@ -845,7 +853,7 @@ int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points,
 
 }
 
-
+/*This function calculate the distance between a given point and cluster*/
 double find_distance(Point* point, Cluster* cluster, int dim)
 {
     int i;
@@ -859,6 +867,7 @@ double find_distance(Point* point, Cluster* cluster, int dim)
     return res;
 }
 
+/*This function gets a cluster centroid and prints is*/
 void print_c(Cluster *cluster, int dim, int cluster_num, int k)
 {
     int i;
@@ -875,6 +884,7 @@ void print_c(Cluster *cluster, int dim, int cluster_num, int k)
     }
 }
 
+/*This function gets a matrix and free its memory*/
 void free_matrix(Matrix* matrix){
     int i;
 
@@ -886,6 +896,8 @@ void free_matrix(Matrix* matrix){
 }
 
 
+/*This is the main function of the program. Its gets the cmd arguments (k, goal, and the points that in the file path as a Point struct). As weel as it gets the n (num of points), dim and flag (if we came from python or C).
+This function allocate and calculates the relevant matrixes, using the kmeans algorithem (if gaol=SPK), print the results and free the allocated memmory */
 Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int flag)
 {
     /*  ---- Declaration ----  */
@@ -906,8 +918,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     struct Cluster** clusters;
 
     /* ######## Calculate all relevant matrixes ########*/
-
-
     /*---- Weighted Adjacency Matrix (W) ----*/
     adj_matrix = (Matrix*) calloc(n, sizeof(double*));
     if(adj_matrix==NULL)
@@ -924,7 +934,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         free_matrix(adj_matrix);
         return NULL;
     }
-
 
     /*---- Diagonal Degree Matrix (D) ----*/
     diag_degree_mat = (Matrix*) calloc(n, sizeof(double*));
@@ -1007,7 +1016,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     {
         /*takes from l norm*/
         copy_mat_a_to_b(l_norm_mat, a_eigenvalues);
-
     }
 
     /* init eigenvectors */
@@ -1021,9 +1029,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
-
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
-
     do{
         count++;
         converting_a_and_v_mat(a_eigenvalues, v_eigenvectors);
@@ -1034,9 +1040,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         printf("prev - cur is: %.16f\n", prev_off_a-cur_off_a);*/
     } while (count<MAX_LOOPS && (prev_off_a-cur_off_a) > EPSILON);
 
-/*
-    printf("jacobi counter is:%d\n", count);
-*/
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
     if(arr_eigenvalues==NULL)
             printf("An Error Has Occured");
@@ -1050,18 +1053,11 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         if(final_eigen==NULL)
             printf("An Error Has Occured");
         assert(final_eigen != NULL);
-
-
-        /*############  need to complete from here #############*/
         mat_to_eigen_struct(a_eigenvalues, v_eigenvectors, final_eigen);
-        /*printf("eigen_values befor sort: \n%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,\n", final_eigen[0]->eigen_value,final_eigen[1]->eigen_value,final_eigen[2]->eigen_value,final_eigen[3]->eigen_value,final_eigen[4]->eigen_value,final_eigen[5]->eigen_value,final_eigen[6]->eigen_value,final_eigen[7]->eigen_value,final_eigen[8]->eigen_value, final_eigen[9]->eigen_value);*/
         sort_eigen_values(final_eigen); /*sorting the eigenvalues for creating U anf for k_heuristic*/
-        /*printf("eigen_values after sort: \n%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,\n", final_eigen[0]->eigen_value,final_eigen[1]->eigen_value,final_eigen[2]->eigen_value,final_eigen[3]->eigen_value,final_eigen[4]->eigen_value,final_eigen[5]->eigen_value,final_eigen[6]->eigen_value,final_eigen[7]->eigen_value,final_eigen[8]->eigen_value, final_eigen[9]->eigen_value);*/
-        /*############  up to here #############*/
         if(k==0)
         {
             k = eigengap_heuristic(final_eigen, n);
-            printf("the chosen k is: %i\n", k);
         }
 
         u_matrix = (Matrix*) calloc(n, sizeof(double*));
@@ -1071,20 +1067,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         u_matrix->rows = n;
         u_matrix->cols = k;
 
-
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
-
-        /*printf("U matrix is calculated:\n");
-        printf("u matrix is:\n");
-        print_mat(u_matrix);
-        printf("\n\n\n\n");*/
-
         t_matrix = normalize_matrix(u_matrix);
-
-        /*printf("t matrix is:\n");
-        print_mat(t_matrix);
-        printf("\n\n\n");*/
 
         if(flag) /* 1 is python, 0 is C*/
         {
@@ -1145,7 +1130,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     free_matrix(a_eigenvalues);
     free_matrix(v_eigenvectors);
     free(arr_eigenvalues);
-
     return NULL;
 }
 
@@ -1157,6 +1141,7 @@ int main(int argc, char** argv)
     char *goal, *filename;
     Point **point_arr;
 
+    /*Input validation*/
     if (argc != 4 || (!is_int(argv[1])))
     {
         printf("Invalid Input!");
@@ -1188,7 +1173,6 @@ int main(int argc, char** argv)
     assert(point_arr != NULL);
     input_to_points_struct(data, point_arr, dim, n);
 
-    /*printf("last point: %f, %f\n", point_arr[n-1]->coordinates[0], point_arr[n-1]->coordinates[1]);*/
     if (strcmp(goal, "wam") != 0 && strcmp(goal, "ddg")!=0 && strcmp(goal, "lnorm")!=0 &&
             strcmp(goal, "jacobi")!=0 && strcmp(goal, "spk")!=0){
         printf("Invalid Input!\n");
