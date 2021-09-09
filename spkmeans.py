@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import mykmeanssp as spk
 
-
 def main(original_k: int, goal: str, file_name: str):
     data = pd.read_csv(file_name, header=None)
     data_arr = data.values.tolist()
