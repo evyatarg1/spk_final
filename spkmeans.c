@@ -5,6 +5,7 @@
 #include <math.h>
 #include <string.h>
 
+/*This function gets a file object, and returns the number of points (non-empty rows) in it*/
 int get_num_points(FILE *filename)
 {
     int last_ch;
@@ -33,6 +34,7 @@ int get_num_points(FILE *filename)
     return num_of_points;
 }
 
+/*This function gets a file obgect, and returns the dim of its points (asuuming each point has the same dim)*/
 int get_dim(FILE *filename){
     int dim;
     int ch;
@@ -46,9 +48,9 @@ int get_dim(FILE *filename){
     if (dim>0) dim++;
     rewind(filename);
     return dim;
-
 }
 
+/*This function gets a char, and checks if its int (retruns 1) else 0*/
 int is_int(char* p){
     while (*p != '\0'){
         if (*p<'0' ||*p>'9') return 0;
@@ -57,6 +59,8 @@ int is_int(char* p){
     return 1;
 }
 
+/*This function get a file object that contain a list of points, their dim and the amount of points (n),
+and insert the points into a Point** object*/
 void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
 {
     int cnt, i;
@@ -92,9 +96,10 @@ void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
     point_arr[n-1]->coordinates[dim-1] = value;
 }
 
+/*This function extracting the points from Point object, and insert them to a Matrix object
+(Both of the objects must be from the same dim)*/
 void points_to_matrix(Point ** point_arr, Matrix * mat)
 {
-    /*Both of the objects must be from the same dim*/
     int i, j;
     for(i = 0; i < mat->rows; i++)
     {
@@ -105,6 +110,8 @@ void points_to_matrix(Point ** point_arr, Matrix * mat)
     }
 }
 
+/*This function calculating the Weighted Adjacency Matrix (gets a point object, and insert the 
+results into a matrix object)*/
 void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
 {
     int i,j;
@@ -117,18 +124,13 @@ void to_weighted_adj_mat(Point** point_arr, Matrix* adj_matrix, int dim)
                 adj_matrix->vertices[i][j] = (double) calc_weight(point_arr[i], point_arr[j], dim);
                 adj_matrix->vertices[j][i] = adj_matrix->vertices[i][j];
             }
-
-            /*printf("last col A[%d][%d]=%f\n", i, j, adj_matrix->vertices[i][j]);
-            if(j+1==adj_matrix->rows)
-            {
-                printf("last col A[%d][%d]=%f\n", i, j, adj_matrix->vertices[i][j]);
-            }*/
         }
         adj_matrix->vertices[i][i] = 0;
     }
 }
 
 
+/*This function gets 2 poionts, and calculate the weight of their "Edge" */
 double calc_weight(Point *first, Point *sec, int dim)
 {
     int i;
@@ -137,24 +139,18 @@ double calc_weight(Point *first, Point *sec, int dim)
     distance = 0.00000000L;
     for (i=0; i<dim; i++)
     {
-        /*printf("first->coordinates[%d]=%f - sec->coordinates[%d]=%f\n", i, first->coordinates[i], i, sec->coordinates[i]);*/
         distance = (first->coordinates[i] - sec->coordinates[i]);
         distance = distance * distance;
-        /*printf("pow it: dis*dis=%f\n", distance);*/
         res+=distance;
     }
-    /*printf("(a1-b1)**2 + ...+ (a.n-b.n)**2= %f\n",res);*/
     res = sqrt(res);
-    /*printf("sqrt= %f\n",res);
-    printf("exp= %f\n",exp(res));*/
     res = 1/(exp(res/2));
-    /*printf("final= %f\n",res);*/
     return res;
 }
 
+/*This dunction calculate the Diagonal Degree Matrix*/
 void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix)
 {
-    /*calc D*/
     int i;
     double row_sum;
     for(i=0; i<diag_mat->rows;i++)
@@ -164,6 +160,7 @@ void calc_diagonal_degree_mat(Matrix* diag_mat, Matrix * adj_matrix)
     }
 }
 
+/*On given matrix (D), this function will calculate D^(-1/2)*/
 void to_sqrt_diag_mat(Matrix* diag_mat)
 {
     int i;
@@ -176,6 +173,8 @@ void to_sqrt_diag_mat(Matrix* diag_mat)
     }
 }
 
+/*This function gets a amtrix and a row index, and returns the sum of the cells in the given row in the
+matrix*/
 double calc_row_sum(Matrix * adj_matrix, int row)
 {
     int i;
@@ -188,13 +187,12 @@ double calc_row_sum(Matrix * adj_matrix, int row)
     return res;
 }
 
-
+/*This functions gets 2 matrixes, and mult them, when one of the matrixes must be diagonal 
+(is_first_diag =1 if "first" is diagonal, is_first_diag=0 if "sec" is diagonal).
+the results will be insert into "res" matirx*/
 void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * res)
 {
     int i, j;
-
-    /*One of the matrixex MUST be diagonal! */
-
     for (i = 0; i < first->rows; i++)
     {
         for (j = 0; j < first->rows; j++)
@@ -206,13 +204,14 @@ void mult_diag_matrix(Matrix * first, Matrix * sec, int is_first_diag, Matrix * 
             else /*sec mat must be diagonal*/
             {
                 res->vertices[i][j] += (first->vertices[i][j])*(sec->vertices[j][j]);
-
             }
         }
     }
     return;
 }
 
+/*This function convert a given matrix [(D^−1/2)*(W)*(D^-1/2)]  into l norm.
+It sub I (identity mat) with a the given mat */
 void to_l_norm(Matrix *mat)
 {
     int i,j;
@@ -223,7 +222,6 @@ void to_l_norm(Matrix *mat)
             if(i==j)
             {
                 mat->vertices[i][j] = 1-mat->vertices[i][j];
-
             }
             else
             {
@@ -234,7 +232,7 @@ void to_l_norm(Matrix *mat)
     return;
 }
 
-
+/*This function gets a matrix, and calculate the sum of squares of all off-diagonal elements of the mat */
 double off_diag_squares_sum(Matrix * mat)
 {
     int i,j;
@@ -249,16 +247,18 @@ double off_diag_squares_sum(Matrix * mat)
                 res += (mat->vertices[i][j]) * (mat->vertices[i][j]);
             }
         }
-
     }
     return res;
 }
 
+
+/*This function gets an eigenvalues matrix (a_mat), and its eigenvectors matrix (v_mat), and calculates
+one step of the jacobi algorithm simultaneously. The results will be stored in a_mat and v_mat, respectively*/
 void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
 {
-    int i, j, r, cur_row, cur_col, teta_sign, index;
+  int i, j, r, cur_row, cur_col, teta_sign, index;
     double t, c, s, teta, max_val;
-    double a_ri, a_rj, a_ii, a_jj, a_ij;
+    double a_ri, a_rj, a_ii, a_jj;
 
     double * row_i_arr;
     double * row_j_arr;
@@ -300,10 +300,6 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
             }
         }
     }
-    /*
-    printf("FINAL: i=%d and j=%d \n",i,j);
-    printf("FINAL max val is: %f\n", max_val);
-    */
 
     /* coping j-row and i-col*/
     for(index = 0; index < a_mat->rows; index++)
@@ -312,29 +308,8 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
         row_j_arr[index] = a_mat->vertices[index][j];
     }
 
-    /*
-    for(index = 0; index < a_mat->rows; index++)
-    {
-        printf("%f ,", row_i_arr[index]);
-    }
-
-    printf("\n row j is: \n");
-    for(index = 0; index < a_mat->rows; index++)
-    {
-        printf("%f ,", row_j_arr[index]);
-    }
-    printf("\n");
-    printf("a_mat->vertices[j][j]=%f\n",a_mat->vertices[j][j]);
-    printf("a_mat->vertices[i][i]=%f\n", a_mat->vertices[i][i]);
-    printf("max_val=%f\n",max_val);
-    */
-
     /*calculating teta, c,t and s*/
     teta = (a_mat->vertices[j][j] - a_mat->vertices[i][i]) / (2*a_mat->vertices[i][j]);
-    /*
-    printf("teta = (a_mat->vertices[j][j] - a_mat->vertices[i][i]) / (2*max_val) is %f\n", teta);
-    */
-
     if(teta >=0)
     {
         teta_sign = 1;
@@ -345,13 +320,6 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     t = teta_sign / (fabs(teta) + sqrt(teta*teta + 1));
     c = 1 / sqrt(t*t + 1);
     s = t*c;
-    /*
-      printf("t is: %f\n", t);
-      printf("c is: %f\n", c);
-      printf("s is: %f\n", s);
-
-
-  */
     /* Calc eigenvalues*/
     for(r = 0; r<a_mat->rows; r++)
     {
@@ -359,10 +327,6 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
         {
             a_ri = c*row_i_arr[r] - s*row_j_arr[r];
             a_rj = c*row_j_arr[r] + s*row_i_arr[r];
-            /*
-            printf("a_%d%d and a_%d%d are %f\n",i,r, r,i, a_ri);
-            printf("a_%d%d and a_%d%d are %f\n",j,r, r,j, a_rj);
-            */
             a_mat->vertices[r][i] = a_ri;
             a_mat->vertices[i][r] = a_ri;
             a_mat->vertices[r][j] = a_rj;
@@ -371,12 +335,10 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     }
     a_ii = (c*c*a_mat->vertices[i][i]) + (s*s*a_mat->vertices[j][j]) - (2*s*c*a_mat->vertices[i][j]);
     a_jj = (s*s*a_mat->vertices[i][i]) + (c*c*a_mat->vertices[j][j]) + (2*s*c*a_mat->vertices[i][j]);
-    a_ij = 0;
-
     a_mat->vertices[i][i] = a_ii;
     a_mat->vertices[j][j] = a_jj;
-    a_mat->vertices[i][j] = a_ij;
-    a_mat->vertices[j][i] = a_ij;
+    a_mat->vertices[i][j] = 0;
+    a_mat->vertices[j][i] = 0;
 
     /* coping j-col and i-col*/
     for(index = 0; index < a_mat->rows; index++)
@@ -390,10 +352,6 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     {
         v_mat->vertices[r][i] = (c*row_i_arr[r]) - (s*row_j_arr[r]);
         v_mat->vertices[r][j] = (s*row_i_arr[r]) + (c*row_j_arr[r]);
-        /*
-        printf("v_mat->vertices[index][i]=%f\n", v_mat->vertices[index][i]);
-        printf("v_mat->vertices[index][j]=%f\n", v_mat->vertices[index][j]);
-        */
     }
 
     free(row_i_arr);
@@ -401,6 +359,7 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     return;
 }
 
+/*This function insert eigenvalues (in a matrix) into an array)*/
 void eigenvalues_into_arr(Matrix * mat, double * arr)
 {
     int i;
@@ -438,12 +397,15 @@ void mat_to_eigen_struct(Matrix * a_eigenvalues, Matrix * v_eigenvectors, Eigen*
 
 int eigengap_heuristic(Eigen** eigen, int n)
 {
-    int i, max_eigengap, max_eigengap_index, cur_gap;
+    int i, max_eigengap_index;
+    double cur_gap, max_eigengap;
     max_eigengap = 0;
     max_eigengap_index = 0;
     for (i = 0; i < (int)floor(n/2); i++)
     {
+        /*printf("eigenvalue[%d]=%f\n",i, eigen[i]->eigen_value);*/
         cur_gap = (eigen[i]->eigen_value - eigen[i+1]->eigen_value);
+        /*printf("gap between %d and %d is %f\n",i, i+1, fabs(cur_gap));*/
         if(fabs(cur_gap)>max_eigengap)
         {
             max_eigengap = fabs(cur_gap);
@@ -451,6 +413,8 @@ int eigengap_heuristic(Eigen** eigen, int n)
         }
     }
     /*max+1 due to the fact that the first eigen is 0, but in the constructions its 1*/
+    
+    /*printf("K from inside heuristic is %d\n", max_eigengap_index+1);*/
     return (max_eigengap_index+1);
 }
 
@@ -490,7 +454,7 @@ void print_mat(Matrix * mat)
             }
             else
             {
-                printf("%.4f", mat->vertices[i][j]);
+                printf("%.16f", mat->vertices[i][j]);
             }
 
             if(j!=mat->rows-1)
