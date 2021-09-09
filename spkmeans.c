@@ -664,7 +664,7 @@ void kmeans(double** observations, int* initial_centroid_indices,
     /* initialize+adapt Clusters array (as a struct)*/
     for(t=0; t<k; t++)
     {
-        clusters[t] = malloc(sizeof(Cluster*));
+        clusters[t] = malloc(sizeof(Cluster));
         if(clusters[t]==NULL)
             printf("An Error Has Occured");
         assert(clusters[t] != NULL);
@@ -1075,9 +1075,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
         t_matrix = normalize_matrix(u_matrix);
 
-        /*printf("t matrix is:\n");
+        printf("t matrix is:\n");
         print_mat(t_matrix);
-        printf("\n\n\n");*/
+        printf("\n\n\n");
 
         if(flag) /* 1 is python, 0 is C*/
         {

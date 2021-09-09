@@ -7,6 +7,8 @@
 #include <math.h>
 #include <assert.h>
 
+static PyObject* c_code(PyObject *self, PyObject *args);
+static PyObject* c_code_kmeans(PyObject *self, PyObject *args);
 
 static PyObject* c_code(PyObject *self, PyObject *args){
     PyObject *p_data, *item, *lst, *current_lst, *res;
@@ -98,7 +100,7 @@ static PyObject* c_code(PyObject *self, PyObject *args){
 
 
 static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
-    PyObject *p_centroids, *p_observations, *item, *lst;
+    PyObject *p_centroids, *p_observations, *item, *lst, *res;
     int k, n, dim, i, j, k_item;
     double d_item;
     double **observations;
@@ -106,10 +108,10 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
     struct Cluster** clusters;
 
     if (!PyArg_ParseTuple(args, "OOiii", &p_centroids, &p_observations, &k, &n, &dim)){
-        return NULL;
+        exit(1);
     }
-    if (!PyList_Check(p_centroids)) return NULL;
-    if (!PyList_Check(p_observations)) return NULL;
+    if (!PyList_Check(p_centroids)) exit(1);
+    if (!PyList_Check(p_observations)) exit(1);
 
     /*observations = a C type 2d array containing all observations*/
     observations = (double**) calloc(n, sizeof(double*));
@@ -147,7 +149,14 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
     free(observations);
     free(ini_centroid_indices);
     free(clusters);
-    return NULL;
+    printf("\nleaving c\n");
+
+    res = PyList_New(n);
+    for (i=0;i<n;i++){
+        PyList_SetItem(res, i, 0);
+    }
+
+    return res;
 }
 
 #define FUNC(_flag, _name, _docstring) { #_name, (PyCFunction)_name, _flag, PyDoc_STR(_docstring) }
