@@ -141,8 +141,6 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
 
     kmeans(observations, ini_centroid_indices, clusters, k, n, dim);
 
-    /*printf("passed kmeans\n");*/
-
     for(i=0;i<n;i++){
         free(observations[i]);
     }

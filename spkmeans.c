@@ -1054,7 +1054,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         if(k==0)
         {
             k = eigengap_heuristic(final_eigen, n);
-            printf("the chosen k is: %i\n", k);
         }
 
         u_matrix = (Matrix*) calloc(n, sizeof(double*));
@@ -1075,9 +1074,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
         t_matrix = normalize_matrix(u_matrix);
 
-        printf("t matrix is:\n");
+        /*printf("t matrix is:\n");
         print_mat(t_matrix);
-        printf("\n\n\n");
+        printf("\n\n\n");*/
 
         if(flag) /* 1 is python, 0 is C*/
         {
