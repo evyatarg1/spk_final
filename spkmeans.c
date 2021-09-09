@@ -639,7 +639,12 @@ double* normalize_row(double* row, int elements_in_row){
     for (i=0; i<elements_in_row; i++){
         sum_of_squares+= pow(row[i], 2);
     }
-    denominator = pow(sum_of_squares, 0.5);
+    if (sum_of_squares==0){
+        denominator = 1;
+    }
+    else{
+        denominator = pow(sum_of_squares, 0.5);
+    }
 
     normalized_row = (double *) calloc(elements_in_row, sizeof (double ));
     if(normalized_row==NULL)
@@ -674,7 +679,6 @@ void kmeans(double** observations, int* initial_centroid_indices,
     if(point_arr==NULL)
         printf("An Error Has Occured");
     assert(point_arr != NULL);
-    printf("got to kmeans\n");
 
     /* initialize+adapt Point array (as a struct)*/
     for(j=0; j<n; j++)
@@ -1086,6 +1090,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         if(k==0)
         {
             k = eigengap_heuristic(final_eigen, n);
+            printf("the chosen k is: %i\n", k);
         }
 
         u_matrix = (Matrix*) calloc(n, sizeof(double*));
@@ -1099,16 +1104,16 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
 
-        /*printf("U matrix is calculated:\n");*/
+        /*printf("U matrix is calculated:\n");
         printf("u matrix is:\n");
         print_mat(u_matrix);
-        printf("\n");
+        printf("\n\n\n\n");*/
 
         t_matrix = normalize_matrix(u_matrix);
 
-        printf("t matrix is:\n");
+        /*printf("t matrix is:\n");
         print_mat(t_matrix);
-        printf("\n\n\n");
+        printf("\n\n\n");*/
 
         if(flag) /* 1 is python, 0 is C*/
         {
