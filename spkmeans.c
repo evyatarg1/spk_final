@@ -580,9 +580,12 @@ Matrix* normalize_matrix(Matrix* mat){
     double* normalized_row;
 
     normalized_matrix = (Matrix*) calloc(1, sizeof(Matrix));
-    assert(normalized_row!=NULL);
+    if(normalized_matrix==NULL)
+        printf("An Error Has Occured");
+    assert(normalized_matrix!=NULL);
     normalized_matrix->rows = mat->rows;
     normalized_matrix->cols = mat->cols;
+
     normalized_matrix->vertices = (double **) calloc(mat->rows, sizeof (double *));
     if(normalized_matrix->vertices==NULL)
         printf("An Error Has Occured");
@@ -639,7 +642,7 @@ void kmeans(double** observations, int* initial_centroid_indices,
 
     differ =1;
     i=0;
-    point_arr = (struct Point**) calloc(n, sizeof(struct Point*));
+    point_arr = (struct Point**) calloc(n+1, sizeof(struct Point*));
     if(point_arr==NULL)
         printf("An Error Has Occured");
     assert(point_arr != NULL);
@@ -656,7 +659,11 @@ void kmeans(double** observations, int* initial_centroid_indices,
             printf("An Error Has Occured");
         assert(point_arr[j]->coordinates != NULL);
         /*adapting from python to c*/
-        point_arr[j]->coordinates = observations[j];
+        for (w = 0; w< dim; w++)
+        {
+            point_arr[j]->coordinates[w] = observations[j][w];
+        }
+        
         point_arr[j]->cluster = -1;
     }
 
@@ -664,7 +671,7 @@ void kmeans(double** observations, int* initial_centroid_indices,
     /* initialize+adapt Clusters array (as a struct)*/
     for(t=0; t<k; t++)
     {
-        clusters[t] = malloc(sizeof(Cluster*));
+        clusters[t] = malloc(sizeof(Cluster));
         if(clusters[t]==NULL)
             printf("An Error Has Occured");
         assert(clusters[t] != NULL);
@@ -1100,11 +1107,11 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         }
         else
         {
-            initial_centroid_indices = (int*) calloc(k, sizeof (int));
+            initial_centroid_indices = (int*) calloc(k+1, sizeof (int));
             for (i=0;i<k;i++){
                 initial_centroid_indices[i] = i;
             }
-            clusters = (struct Cluster**) calloc(k, sizeof(struct Cluster*));
+            clusters = (struct Cluster**) calloc(k+1, sizeof(struct Cluster*));
             if(clusters==NULL)
                 printf("An Error Has Occured");
             assert(clusters != NULL);
@@ -1175,7 +1182,7 @@ int main(int argc, char** argv)
         exit(1);
     }
     /*  ---- Input to struct ----  */
-    point_arr = (Point**) calloc(n, sizeof(Point*));
+    point_arr = (Point**) calloc(n+1, sizeof(Point*));
     if(point_arr==NULL)
                 printf("An Error Has Occured");
     assert(point_arr != NULL);
