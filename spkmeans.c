@@ -57,32 +57,6 @@ int is_int(char* p){
     return 1;
 }
 
-void input_to_arr(FILE *filename, double** arr, int dim, int n){
-    int cnt, i;
-    char ch;
-    double value;
-    cnt = 0;
-    i=0;
-
-    while (fscanf(filename, "%lf%c", &value, &ch) == 2)
-    {
-        if (i==0)
-        {
-            arr[cnt] = (double*) calloc(dim+1, sizeof(double));
-            assert(arr[cnt] != NULL);
-        }
-        arr[cnt][i] = value;
-        i++;
-        if (i==dim)
-        {
-            i=0;
-            cnt++;
-        }
-    }
-    /*in case that there is no '\n' in the end of the file,
-    and therefore - we will need to init it manualy*/
-    arr[n-1][dim-1] = value;
-}
 void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
 {
     int cnt, i;
@@ -96,8 +70,12 @@ void input_to_points_struct(FILE *filename, Point** point_arr, int dim, int n)
         if (i==0)
         {
             point_arr[cnt] = malloc(sizeof(Point));
+            if(point_arr[cnt]==NULL)
+                printf("An Error Has Occured");
             assert(point_arr[cnt] != NULL);
             point_arr[cnt]->coordinates = calloc(dim+1, sizeof(double));
+            if(point_arr[cnt]->coordinates==NULL)
+                printf("An Error Has Occured");
             assert(point_arr[cnt]->coordinates != NULL);
 
         }
@@ -285,8 +263,12 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     double * row_i_arr;
     double * row_j_arr;
     row_i_arr = (double *) calloc(a_mat->rows, sizeof(double));
+    if(row_i_arr==NULL)
+                printf("An Error Has Occured");
     assert(row_i_arr != NULL);
     row_j_arr = (double *) calloc(a_mat->cols, sizeof(double));
+    if(row_j_arr==NULL)
+                printf("An Error Has Occured");
     assert(row_j_arr != NULL);
 
     i=0;
@@ -298,11 +280,23 @@ void converting_a_and_v_mat(Matrix * a_mat, Matrix * v_mat)
     {
         for (cur_col = 0; cur_col < a_mat->cols; cur_col++)
         {
-            if(cur_row!=cur_col && (fabs(a_mat->vertices[cur_row][cur_col])>max_val))
+            if(cur_row<cur_col)
             {
-                i = cur_row;
-                j = cur_col;
-                max_val = fabs(a_mat->vertices[cur_row][cur_col]);
+                if(fabs(a_mat->vertices[cur_row][cur_col])==max_val)
+                {
+                    if (cur_row<i || (cur_row==i && cur_col<j))
+                    {
+                        i = cur_row;
+                        j = cur_col;
+                        max_val = fabs(a_mat->vertices[i][j]);
+                    }
+                }
+                else if(fabs(a_mat->vertices[cur_row][cur_col])>max_val)
+                {
+                    i = cur_row;
+                    j = cur_col;
+                    max_val = fabs(a_mat->vertices[i][j]);
+                }
             }
         }
     }
@@ -422,8 +416,12 @@ void mat_to_eigen_struct(Matrix * a_eigenvalues, Matrix * v_eigenvectors, Eigen*
     for(i = 0; i<a_eigenvalues->rows; i++)
     {
         final_eigen[i] = malloc(sizeof(Eigen));
+        if(final_eigen[i]==NULL)
+                printf("An Error Has Occured");
         assert(final_eigen[i] != NULL);
         final_eigen[i]->eigen_vector = calloc(a_eigenvalues->rows, sizeof(double));
+        if(final_eigen[i]->eigen_vector==NULL)
+                printf("An Error Has Occured");
         assert(final_eigen[i]->eigen_vector != NULL);
     }
     for (i = 0; i < a_eigenvalues->rows; i++)
@@ -492,7 +490,7 @@ void print_mat(Matrix * mat)
             }
             else
             {
-                printf("%.16f", mat->vertices[i][j]);
+                printf("%.4f", mat->vertices[i][j]);
             }
 
             if(j!=mat->rows-1)
@@ -506,7 +504,6 @@ void print_mat(Matrix * mat)
         }
     }
     /*printf("there are %d cells that are not 0\n", count);*/
-
 }
 
 void print_transpose_mat(Matrix * mat)
@@ -540,6 +537,25 @@ void print_transpose_mat(Matrix * mat)
 
 }
 
+void print_arr(double* arr, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        if(arr[i]<0 && arr[i] > -0.00005)
+        {
+            printf("0.0000");
+        }
+        else
+        {
+            printf("%.4f", arr[i]);
+        }
+        if(i+1!=n)
+        {
+            printf(",");
+        }
+    }
+}
 void init_to_identity(Matrix* mat)
 {
     int i;
@@ -547,6 +563,8 @@ void init_to_identity(Matrix* mat)
     for(i=0; i<mat->rows;i++)
     {
         mat->vertices[i] = calloc(mat->rows, sizeof(double));
+        if(mat->vertices[i]==NULL)
+                printf("An Error Has Occured");
         assert(mat->vertices[i] != NULL);
         mat->vertices[i][i] = 1;
     }
@@ -559,6 +577,8 @@ void init_mat(Matrix* mat)
     for(i=0; i<mat->rows;i++)
     {
         mat->vertices[i] = calloc(mat->cols, sizeof(double));
+        if(mat->vertices[i]==NULL)
+            printf("An Error Has Occured");
         assert(mat->vertices[i] != NULL);
     }
 }
@@ -596,10 +616,12 @@ Matrix* normalize_matrix(Matrix* mat){
     double* normalized_row;
 
     normalized_matrix = (Matrix*) calloc(1, sizeof(Matrix));
-    assert(normalized_matrix!=NULL);
+    assert(normalized_row!=NULL);
     normalized_matrix->rows = mat->rows;
     normalized_matrix->cols = mat->cols;
     normalized_matrix->vertices = (double **) calloc(mat->rows, sizeof (double *));
+    if(normalized_matrix->vertices==NULL)
+        printf("An Error Has Occured");
     assert(normalized_matrix->vertices != NULL);
     for (i=0; i<mat->rows; i++){
         normalized_row = normalize_row(mat->vertices[i], mat->cols);
@@ -620,6 +642,8 @@ double* normalize_row(double* row, int elements_in_row){
     denominator = pow(sum_of_squares, 0.5);
 
     normalized_row = (double *) calloc(elements_in_row, sizeof (double ));
+    if(normalized_row==NULL)
+        printf("An Error Has Occured");
     assert(normalized_row!=NULL);
     for (i=0; i<elements_in_row; i++){
         normalized_row[i] = row[i]/denominator;
@@ -647,15 +671,21 @@ void kmeans(double** observations, int* initial_centroid_indices,
     differ =1;
     i=0;
     point_arr = (struct Point**) calloc(n, sizeof(struct Point*));
+    if(point_arr==NULL)
+        printf("An Error Has Occured");
     assert(point_arr != NULL);
-    /*printf("got to kmeans\n");*/
+    printf("got to kmeans\n");
 
     /* initialize+adapt Point array (as a struct)*/
     for(j=0; j<n; j++)
     {
         point_arr[j] = malloc(sizeof(struct Point));
+        if(point_arr[j]==NULL)
+            printf("An Error Has Occured");
         assert(point_arr[j] != NULL);
         point_arr[j]->coordinates = calloc(dim+1, sizeof(double));
+        if(point_arr[j]->coordinates==NULL)
+            printf("An Error Has Occured");
         assert(point_arr[j]->coordinates != NULL);
         /*adapting from python to c*/
         point_arr[j]->coordinates = observations[j];
@@ -667,10 +697,16 @@ void kmeans(double** observations, int* initial_centroid_indices,
     for(t=0; t<k; t++)
     {
         clusters[t] = malloc(sizeof(Cluster*));
+        if(clusters[t]==NULL)
+            printf("An Error Has Occured");
         assert(clusters[t] != NULL);
         clusters[t]->curr_centroid = (double*) malloc((dim+1)*sizeof(double));
+        if(clusters[t]->curr_centroid==NULL)
+            printf("An Error Has Occured");
         assert(clusters[t]->curr_centroid != NULL);
         clusters[t]->prev_centroid = (double*) malloc((dim+1)*sizeof(double));
+        if(clusters[t]->prev_centroid==NULL)
+            printf("An Error Has Occured");
         assert(clusters[t]->prev_centroid != NULL);
         /*adapting from python to c:
         updating the clusters of the observations that were already classified as centroids*/
@@ -899,6 +935,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*---- Weighted Adjacency Matrix (W) ----*/
     adj_matrix = (Matrix*) calloc(n, sizeof(double*));
+    if(adj_matrix==NULL)
+            printf("An Error Has Occured");
     assert(adj_matrix != NULL);
     adj_matrix->rows = n;
     adj_matrix->cols = n;
@@ -915,6 +953,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*---- Diagonal Degree Matrix (D) ----*/
     diag_degree_mat = (Matrix*) calloc(n, sizeof(double*));
+    if(diag_degree_mat==NULL)
+            printf("An Error Has Occured");
     assert(diag_degree_mat != NULL);
     diag_degree_mat->rows = n;
     diag_degree_mat->cols = n;
@@ -931,6 +971,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*----  Making D into D^(-1/2) ----*/
     sqrt_diag_degree_mat = (Matrix*) calloc(n, sizeof(double*));
+    if(sqrt_diag_degree_mat==NULL)
+            printf("An Error Has Occured");
     assert(sqrt_diag_degree_mat != NULL);
     sqrt_diag_degree_mat->rows = n;
     sqrt_diag_degree_mat->cols = n;
@@ -940,6 +982,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*---- L Norm Matrix (lnorm)----*/
     l_norm_mat = (Matrix*) calloc(n, sizeof(double*));
+    if(l_norm_mat==NULL)
+            printf("An Error Has Occured");
     assert(l_norm_mat != NULL);
     l_norm_mat->rows = n;
     l_norm_mat->cols = n;
@@ -947,6 +991,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /* init additional temp matrix (for calculation purposes) */
     temp_mat = (Matrix*) calloc(n, sizeof(double*));
+    if(temp_mat==NULL)
+            printf("An Error Has Occured");
     assert(temp_mat != NULL);
     temp_mat->rows = n;
     temp_mat->cols = n;
@@ -971,6 +1017,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     /*---- Calc A matrix (eiganvalues) and V matrix (eiganvectors) ----*/
     /* init eigenvalues */
     a_eigenvalues = (Matrix*) calloc(n, sizeof(double*));
+    if(a_eigenvalues==NULL)
+            printf("An Error Has Occured");
     assert(a_eigenvalues != NULL);
     a_eigenvalues->rows = n;
     a_eigenvalues->cols = n;
@@ -989,6 +1037,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /* init eigenvectors */
     v_eigenvectors = (Matrix*) calloc(n, sizeof(double*));
+    if(v_eigenvectors==NULL)
+            printf("An Error Has Occured");
     assert(v_eigenvectors != NULL);
     v_eigenvectors->rows = n;
     v_eigenvectors->cols = n;
@@ -996,8 +1046,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
-    /*printf("epsilon is: %.16f\n", EPSILON);*/
+
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
+
     do{
         count++;
         converting_a_and_v_mat(a_eigenvalues, v_eigenvectors);
@@ -1008,11 +1059,12 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         printf("prev - cur is: %.16f\n", prev_off_a-cur_off_a);*/
     } while (count<MAX_LOOPS && (prev_off_a-cur_off_a) > EPSILON);
 
-
-   /* printf("jacobi counter is:%d\n", count);*/
-
-
+/*
+    printf("jacobi counter is:%d\n", count);
+*/
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
+    if(arr_eigenvalues==NULL)
+            printf("An Error Has Occured");
     assert(arr_eigenvalues != NULL);
     eigenvalues_into_arr(a_eigenvalues, arr_eigenvalues);
 
@@ -1020,6 +1072,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     {
         /* creating Eigen struct and coping the values of the relevant matrices to it*/
         final_eigen = (Eigen**) calloc(n, sizeof(Eigen*));
+        if(final_eigen==NULL)
+            printf("An Error Has Occured");
         assert(final_eigen != NULL);
 
 
@@ -1029,14 +1083,14 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         sort_eigen_values(final_eigen); /*sorting the eigenvalues for creating U anf for k_heuristic*/
         /*printf("eigen_values after sort: \n%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,\n", final_eigen[0]->eigen_value,final_eigen[1]->eigen_value,final_eigen[2]->eigen_value,final_eigen[3]->eigen_value,final_eigen[4]->eigen_value,final_eigen[5]->eigen_value,final_eigen[6]->eigen_value,final_eigen[7]->eigen_value,final_eigen[8]->eigen_value, final_eigen[9]->eigen_value);*/
         /*############  up to here #############*/
-
-
         if(k==0)
         {
             k = eigengap_heuristic(final_eigen, n);
         }
 
         u_matrix = (Matrix*) calloc(n, sizeof(double*));
+        if(u_matrix==NULL)
+            printf("An Error Has Occured");
         assert(u_matrix != NULL);
         u_matrix->rows = n;
         u_matrix->cols = k;
@@ -1082,6 +1136,8 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
                 initial_centroid_indices[i] = i;
             }
             clusters = (struct Cluster**) calloc(k, sizeof(struct Cluster*));
+            if(clusters==NULL)
+                printf("An Error Has Occured");
             assert(clusters != NULL);
             kmeans(t_matrix->vertices, initial_centroid_indices, clusters, k, n, k);
 
@@ -1096,27 +1152,11 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
             free_matrix(t_matrix);
 
         }
-
     }
 
     if(strcmp(goal, "jacobi")==0)
     {
-        /* print the eigen values*/
-        for (i = 0; i < n; i++)
-        {
-            if(arr_eigenvalues[i]<0 && arr_eigenvalues[i] > -0.00005)
-            {
-                printf("0.0000");
-            }
-            else
-            {
-                printf("%.4f", arr_eigenvalues[i]);
-            }
-            if(i+1!=n)
-            {
-                printf(",");
-            }
-        }
+        print_arr(arr_eigenvalues, n); /* print the eigen values*/
         printf("\n");
         print_transpose_mat(v_eigenvectors);
     }
@@ -1143,7 +1183,7 @@ int main(int argc, char** argv)
 
     if (argc != 4 || (!is_int(argv[1])))
     {
-        printf("Invalid Input!\n");
+        printf("Invalid Input!");
         exit(1);
     }
 
@@ -1153,7 +1193,7 @@ int main(int argc, char** argv)
 
     data = fopen(filename, "r");
     if(data==NULL){
-        printf("Invalid Input!\n");
+        printf("Invalid Input!");
         exit(1);
     }
 
@@ -1161,12 +1201,14 @@ int main(int argc, char** argv)
     n = get_num_points(data);
     dim = get_dim(data);
     if (n == 0 || dim == 0 || k>=n){
-        printf("Invalid Input!\n");
+        printf("Invalid Input!");
         fclose(data);
         exit(1);
     }
     /*  ---- Input to struct ----  */
     point_arr = (Point**) calloc(n, sizeof(Point*));
+    if(point_arr==NULL)
+                printf("An Error Has Occured");
     assert(point_arr != NULL);
     input_to_points_struct(data, point_arr, dim, n);
 
