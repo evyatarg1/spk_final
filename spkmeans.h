@@ -58,6 +58,6 @@ int assign_to_closest_cluster(int point_num, Cluster** clusters, Point** points,
 double find_distance(Point* point, Cluster* cluster, int dim);
 void update_centroids(Cluster** clusters, Point** point_arr, int k, int dim, int n);
 int check_difference_in_centroids(Cluster** clusters, int k, int dim);
-void print_c(Cluster *cluster, int dim);
+void print_c(Cluster *cluster, int dim, int cluster_num, int k);
 void free_matrix(Matrix* matrix);
 Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int flag);

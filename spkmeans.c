@@ -492,7 +492,7 @@ void print_mat(Matrix * mat)
             }
             else
             {
-                printf("%.4f", mat->vertices[i][j]);
+                printf("%.16f", mat->vertices[i][j]);
             }
 
             if(j!=mat->rows-1)
@@ -596,7 +596,7 @@ Matrix* normalize_matrix(Matrix* mat){
     double* normalized_row;
 
     normalized_matrix = (Matrix*) calloc(1, sizeof(Matrix));
-    assert(normalized_row!=NULL);
+    assert(normalized_matrix!=NULL);
     normalized_matrix->rows = mat->rows;
     normalized_matrix->cols = mat->cols;
     normalized_matrix->vertices = (double **) calloc(mat->rows, sizeof (double *));
@@ -648,7 +648,7 @@ void kmeans(double** observations, int* initial_centroid_indices,
     i=0;
     point_arr = (struct Point**) calloc(n, sizeof(struct Point*));
     assert(point_arr != NULL);
-    printf("got to kmeans\n");
+    /*printf("got to kmeans\n");*/
 
     /* initialize+adapt Point array (as a struct)*/
     for(j=0; j<n; j++)
@@ -707,8 +707,9 @@ void kmeans(double** observations, int* initial_centroid_indices,
     }
 
     for (i=0;i<k;i++){
-        print_c(clusters[i], dim);
+        print_c(clusters[i], dim, i, k);
     }
+
 
     for (i=0; i<n; i++){
         free(point_arr[i]->coordinates);
@@ -847,7 +848,7 @@ double find_distance(Point* point, Cluster* cluster, int dim)
     return res;
 }
 
-void print_c(Cluster *cluster, int dim)
+void print_c(Cluster *cluster, int dim, int cluster_num, int k)
 {
     int i;
     for (i=0; i<dim; ++i)
@@ -858,7 +859,9 @@ void print_c(Cluster *cluster, int dim)
             printf(",");
         }
     }
-    printf("\n");
+    if (cluster_num<(k-1)) {
+        printf("\n");
+    }
 }
 
 void free_matrix(Matrix* matrix){
@@ -993,7 +996,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
-    printf("epsilon is: %.16f\n", EPSILON);
+    /*printf("epsilon is: %.16f\n", EPSILON);*/
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
     do{
         count++;
@@ -1006,7 +1009,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     } while (count<MAX_LOOPS && (prev_off_a-cur_off_a) > EPSILON);
 
 
-    printf("jacobi counter is:%d\n", count);
+   /* printf("jacobi counter is:%d\n", count);*/
 
 
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
@@ -1042,11 +1045,16 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
 
-        printf("U matrix is (daniella needs to delete this print and continue from here):\n");
+        /*printf("U matrix is calculated:\n");*/
+        printf("u matrix is:\n");
         print_mat(u_matrix);
-        printf("\n\n");
+        printf("\n");
 
         t_matrix = normalize_matrix(u_matrix);
+
+        printf("t matrix is:\n");
+        print_mat(t_matrix);
+        printf("\n\n\n");
 
         if(flag) /* 1 is python, 0 is C*/
         {
@@ -1077,6 +1085,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
             assert(clusters != NULL);
             kmeans(t_matrix->vertices, initial_centroid_indices, clusters, k, n, k);
 
+            free(initial_centroid_indices);
             free(clusters);
             for(i=0;i<n;i++){
                 free(final_eigen[i]->eigen_vector);
@@ -1088,7 +1097,6 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
         }
 
-        printf("In construction :)\n");
     }
 
     if(strcmp(goal, "jacobi")==0)

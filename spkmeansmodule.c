@@ -7,9 +7,6 @@
 #include <math.h>
 #include <assert.h>
 
-static PyObject* c_code(PyObject *self, PyObject *args);
-static PyObject* c_code_kmeans(PyObject *self, PyObject *args);
-
 
 static PyObject* c_code(PyObject *self, PyObject *args){
     PyObject *p_data, *item, *lst, *current_lst, *res;
@@ -63,9 +60,9 @@ static PyObject* c_code(PyObject *self, PyObject *args){
             return NULL;
         }
 
-        for (i=0;i<k;i++) {
-            current_lst = PyList_New(dim);
-            for (j = 0; j < dim; j++) {
+        for (i=0;i<t_matrix->rows ;i++) {
+            current_lst = PyList_New(t_matrix->cols);
+            for (j = 0; j < t_matrix->cols; j++) {
                 item = Py_BuildValue("d", t_matrix->vertices[i][j]);
                 PyList_SetItem(current_lst, j, item);
             }
@@ -142,13 +139,15 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
 
     kmeans(observations, ini_centroid_indices, clusters, k, n, dim);
 
+    printf("passed kmeans\n");
+
     for(i=0;i<n;i++){
         free(observations[i]);
     }
     free(observations);
     free(ini_centroid_indices);
     free(clusters);
-
+    printf("1\n");
     return NULL;
 }
 
