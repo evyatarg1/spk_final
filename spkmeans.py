@@ -42,7 +42,6 @@ def main(original_k: int, goal: str, file_name: str):
         print(*initial_centroid_indices, sep=',')
 
         spk.c_code_kmeans(initial_centroid_indices, observations, k, n, dim)  # C code
-        print("back to python")
 
     elif goal == 'wam':
         spk.c_code(original_k, data_arr, 1, original_n, original_dim)
@@ -53,7 +52,6 @@ def main(original_k: int, goal: str, file_name: str):
     elif goal == 'jacobi':
         spk.c_code(original_k, data_arr, 4, original_n, original_dim)
 
-    print("passed elif's")
 
 
 def find_min_distance(centroids, vector):
@@ -78,4 +76,4 @@ if __name__ == "__main__":
         print("Invalid Input!")
         exit(1)
     main(int(sys.argv[1]), sys.argv[2], sys.argv[3])
-    print("passed main")
+    exit(1)
