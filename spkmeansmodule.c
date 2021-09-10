@@ -51,8 +51,6 @@ static PyObject* c_code(PyObject *self, PyObject *args){
             point_arr[i]->coordinates[j] = data[i][j];
         }
     }
-    /*printf("%lf\n", point_arr[0]->coordinates[0]);
-    exit(1);*/
 
     res = PyList_New(n);
 
