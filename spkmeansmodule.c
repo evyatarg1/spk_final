@@ -1,7 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 
-#include "spkmeans.h"
 #include <Python.h>
+#include "spkmeans.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -147,7 +147,6 @@ static PyObject* c_code_kmeans(PyObject *self, PyObject *args){
     free(observations);
     free(ini_centroid_indices);
     free(clusters);
-    printf("\nleaving c\n");
 
     res = PyList_New(n);
     for (i=0;i<n;i++){
