@@ -1064,22 +1064,13 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
-printf("epsilon is=%f\n", EPSILON);
 
     do{
         count++;
         converting_a_and_v_mat(a_eigenvalues, v_eigenvectors);
-        printf("A mat is\n");
-        print_mat(a_eigenvalues);
-        printf("\n");
         prev_off_a = cur_off_a;
         cur_off_a=off_diag_squares_sum(a_eigenvalues);
-        printf("prev is: %.16f\n", prev_off_a);
-        printf("cur is: %.16f\n", cur_off_a);
-        printf("prev - cur is: %.16f\n\n", prev_off_a-cur_off_a);
-
     } while (count<MAX_LOOPS && (prev_off_a-cur_off_a) > EPSILON);
-    printf("count is=%d\n", count);
 
     arr_eigenvalues = (double*) calloc(n, sizeof(double));
     if(arr_eigenvalues==NULL)
