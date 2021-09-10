@@ -1036,7 +1036,7 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
     /*----  Calc the eigenvectors and eigenvalues  ----*/
     count = 0;
     cur_off_a = off_diag_squares_sum(a_eigenvalues);
-    printf("epsilon is=%f\n", EPSILON);
+printf("epsilon is=%f\n", EPSILON);
 
     do{
         count++;
