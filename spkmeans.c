@@ -1083,9 +1083,10 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
 
-        print_mat(u_matrix);
-
         t_matrix = normalize_matrix(u_matrix);
+        /*printf("t matrix is:\n");
+        print_mat(t_matrix);
+        printf("\n");*/
 
         if(flag) /* 1 is python, 0 is C*/
         {
