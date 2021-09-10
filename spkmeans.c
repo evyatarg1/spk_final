@@ -873,7 +873,13 @@ void print_c(Cluster *cluster, int dim, int cluster_num, int k)
     int i;
     for (i=0; i<dim; ++i)
     {
-        printf("%.4f",cluster->curr_centroid[i]);
+        if(cluster->curr_centroid[i] > -0.00005 && cluster->curr_centroid[i]<0)
+        {
+            printf("0.0000");
+        }
+        else {
+            printf("%.4f", cluster->curr_centroid[i]);
+        }
         if(i!=(dim-1))
         {
             printf(",");
@@ -1069,6 +1075,9 @@ Matrix* main_logic(int k, char * goal, Point** point_arr, int n, int dim, int fl
 
         init_mat(u_matrix);
         eigen_struct_to_matrix(u_matrix, final_eigen);
+
+        print_mat(u_matrix);
+
         t_matrix = normalize_matrix(u_matrix);
 
         if(flag) /* 1 is python, 0 is C*/
